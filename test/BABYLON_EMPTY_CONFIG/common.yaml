@@ -1,0 +1,12 @@
+---
+# Agnosticd variables
+platform: babylon
+
+output_dir: /tmp/output_dir/{{ env_type }}-{{ guid }}
+env_type:           test-empty-config
+cloud_provider:     test
+
+# THE REST
+__meta__:
+  tower:
+    organization: gpte

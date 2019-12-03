@@ -1,0 +1,18 @@
+---
+purpose: development
+
+__meta__:
+  catalog:
+    namespace: openshift
+
+    description: >-
+      this is the empty config. It depploys nothing but test the whole Babylon stack.
+
+    tags:
+      - babylon
+
+  deployer:
+    scm_url: https://github.com/redhat-cop/agnosticd.git
+    scm_type: git
+    scm_ref: development
+    type: agnosticd
