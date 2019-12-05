@@ -1,0 +1,18 @@
+---
+clientvm_instance_type: t2.large
+__meta__:
+  catalog:
+    namespace: openshift
+
+    description: >-
+      this is The PROD catalog item
+
+    tags:
+      - babylon
+      - ocp
+
+  deployer:
+    scm_url: https://github.com/redhat-cop/agnosticd.git
+    scm_type: git
+    scm_ref: ocp-clientvm-prod-1.5
+    type: agnosticd

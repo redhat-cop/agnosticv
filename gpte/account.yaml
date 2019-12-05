@@ -1,0 +1,32 @@
+---
+##########################
+# agnosticD variables    #
+##########################
+
+cloud_provider: ec2
+key_name: opentlc_admin_backdoor
+repo_method: file
+
+subdomain_base_suffix: .example.opentlc.com
+HostedZoneId: Z3IHLWJZOU9SRT
+
+# Cloud Tags, for cost management
+cloud_tags:
+  env_type: "{{ env_type }}"
+  guid: "{{ guid }}"
+  course_name: "{{ course_name | d('unknown') }}"
+  platform: "{{ platform | d('unknown') }}"
+  purpose: "{{ purpose | d('unknown') }}"
+
+##########################
+# Babylon meta variables #
+##########################
+
+__meta__:
+  # OCP secrets to load and pass to agnosticD
+  secrets:
+    - gpte-aws-creds
+    - gpte-repos
+
+  tower:
+    organization: gpte

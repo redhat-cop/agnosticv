@@ -1,0 +1,6 @@
+---
+platform: babylon
+env_type: ocp-clientvm
+software_to_deploy: none
+install_ftl: true
+install_ipa_client: true
