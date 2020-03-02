@@ -1,0 +1,16 @@
+---
+cloud_provider: none
+
+##########################
+# Babylon meta variables #
+##########################
+
+__meta__:
+  # Dark Tower configuration
+  tower:
+    organization: gpte
+
+  deployer:
+    scm_url: https://github.com/redhat-cop/agnosticd.git
+    scm_type: git
+    type: agnosticd

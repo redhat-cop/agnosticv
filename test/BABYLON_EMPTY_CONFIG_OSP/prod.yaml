@@ -1,0 +1,22 @@
+---
+purpose: prod
+
+#########################################
+# Meta variables for admin host scripts #
+# ALL_agnosticv.sh                      #
+#########################################
+agnosticv_meta:
+  babylon:
+    # This file lives in ~/secrets on the deploy host
+    kubeconfig: babyprod.kubeconfig
+
+##########################
+# Babylon meta variables #
+##########################
+__meta__:
+  secrets:
+    - namespace: gpte
+      name: openstack-lab-secret
+
+  deployer:
+    scm_ref: test-empty-config-prod-0.5

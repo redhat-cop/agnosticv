@@ -1,9 +1,6 @@
 ---
 purpose: development
 
-pause_destroy: true
-pause_post_software: true
-
 #########################################
 # Meta variables for admin host scripts #
 # ALL_agnosticv.sh                      #
@@ -31,12 +28,14 @@ agnosticv_meta:
 __meta__:
   deployer:
     scm_ref: development
+    virtualenv: aws-ansible-2.9
 
   catalog:
     namespace: gpte
 
     description: >-
-      this is the empty config. It deploys nothing but test the whole Babylon stack.
+      This is the empty config. It deploys nothing but test the whole Babylon stack.
+      It also tests AWS with read-only operations.
 
     tags:
       - babylon

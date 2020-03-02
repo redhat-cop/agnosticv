@@ -1,9 +1,6 @@
 ---
 purpose: development
 
-pause_destroy: true
-pause_post_software: true
-
 #########################################
 # Meta variables for admin host scripts #
 # ALL_agnosticv.sh                      #
@@ -29,8 +26,14 @@ agnosticv_meta:
 ##########################
 
 __meta__:
+
+  secrets:
+    - namespace: gpte
+      name: openstack-red
+
   deployer:
     scm_ref: development
+    virtualenv: openstack-ansible-2.9
 
   catalog:
     namespace: gpte
