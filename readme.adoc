@@ -36,6 +36,11 @@ Usage of ./agnosticv:
         List all the catalog items present in current directory.
   -merge string
         Merge and print variables of a catalog item.
+  -root string
+        The top directory of the agnosticv files. Files outside of this directory will not be merged.
+        By default, it's empty, and the scope of the git repository is used, so you should not
+        need this parameter unless your files are not in a git repository.
+
 ----
 
 

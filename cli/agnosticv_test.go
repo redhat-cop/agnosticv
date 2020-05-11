@@ -32,3 +32,21 @@ func TestParentDir(t *testing.T) {
 		}
 	}
 }
+
+func TestChrooted(t *testing.T) {
+	if chrooted("/ok", "/") != false {
+		t.Error()
+	}
+	if chrooted("/ok", "/ok/foo/bar") != true {
+		t.Error()
+	}
+	if chrooted("/", "/whatever") != true {
+		t.Error()
+	}
+	if chrooted("/ok", "/ok") != true {
+		t.Error()
+	}
+	if chrooted("/foo", "/bar") != false {
+		t.Error()
+	}
+}

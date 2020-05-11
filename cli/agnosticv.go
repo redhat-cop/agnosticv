@@ -1,16 +1,17 @@
 package main
+
 import (
-	"fmt"
-	"os"
-	"log"
-	"io/ioutil"
 	"flag"
+	"fmt"
+	"github.com/imdario/mergo"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"log"
+	"os"
 	"path"
 	"path/filepath"
-	"gopkg.in/yaml.v2"
-	"github.com/imdario/mergo"
+	"strings"
 )
-
 
 // Logs
 var logErr *log.Logger
@@ -22,6 +23,7 @@ var logReport *log.Logger
 var listFlag bool
 var mergeFlag string
 var debugFlag bool
+var rootFlag string
 
 // Global variables
 
@@ -31,10 +33,23 @@ func parseFlags() {
 	flag.BoolVar(&listFlag, "list", false, "List all the catalog items present in current directory.")
 	flag.BoolVar(&debugFlag, "debug", false, "Debug mode")
 	flag.StringVar(&mergeFlag, "merge", "", "Merge and print variables of a catalog item.")
+	flag.StringVar(&rootFlag, "root", "", `The top directory of the agnosticv files. Files outside of this directory will not be merged.
+By default, it's empty, and the scope of the git repository is used, so you should not
+need this parameter unless your files are not in a git repository.`)
 
 	flag.Parse()
 	if mergeFlag == "" && listFlag == false {
 		flag.PrintDefaults()
+	}
+
+	if rootFlag != "" {
+		if ! fileExists(rootFlag) {
+			logErr.Fatalf("File %s does not exist", rootFlag)
+		}
+
+		if rootAbs, err := filepath.Abs(rootFlag) ; err == nil {
+			rootFlag = rootAbs
+		}
 	}
 }
 
@@ -104,6 +119,10 @@ func parentDir(path string) string {
 	return filepath.Dir(currentDir)
 }
 
+func chrooted(root string, path string) bool {
+	return strings.HasPrefix(path, root)
+}
+
 // This function return the next file to be included in the merge.
 // it returns the empty string "" if not found.
 // pos can be a directory or a file
@@ -122,6 +141,12 @@ func nextCommonFile(position string) string {
 			// If it's already the root of the git directory, then stop.
 			if fileExists(filepath.Join(filepath.Dir(position), ".git")) {
 				// No common file found in current repo
+				return ""
+			}
+
+			// If parent is out of chroot, stop
+			if rootFlag != "" && ! chrooted(rootFlag, parentDir(position)) {
+				logDebug.Println("parent of", position, ",", parentDir(position), "is out of chroot", rootFlag)
 				return ""
 			}
 
@@ -150,6 +175,14 @@ func nextCommonFile(position string) string {
 
 	if fileExists(filepath.Join(filepath.Dir(position), ".git")) {
 		// No common file found in current repo
+		return ""
+	}
+
+	if position == "/" { return "" }
+
+	// If parent is out of chroot, stop
+	if rootFlag != "" && ! chrooted(rootFlag, parentDir(position)) {
+		logDebug.Println("parent of", position, ",", parentDir(position), "is out of chroot", rootFlag)
 		return ""
 	}
 
@@ -224,8 +257,8 @@ func mergeVars(mergeList []string) interface{} {
 }
 
 func main() {
-	parseFlags()
 	initLoggers()
+	parseFlags()
 
 	// Save current work directory
 	if wd, errWorkDir := os.Getwd() ; errWorkDir == nil {
