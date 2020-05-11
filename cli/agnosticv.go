@@ -119,6 +119,12 @@ func nextCommonFile(position string) string {
 	// If position is a common file, try with parent dir
 	for _, commonFile := range validCommonFileNames {
 		if path.Base(position) == commonFile {
+			// If it's already the root of the git directory, then stop.
+			if fileExists(filepath.Join(filepath.Dir(position), ".git")) {
+				// No common file found in current repo
+				return ""
+			}
+
 			return nextCommonFile(parentDir(position))
 		}
 	}
@@ -142,8 +148,13 @@ func nextCommonFile(position string) string {
 		}
 	}
 
-	// No common file found in current
-	return ""
+	if fileExists(filepath.Join(filepath.Dir(position), ".git")) {
+		// No common file found in current repo
+		return ""
+	}
+
+	return nextCommonFile(parentDir(position))
+
 }
 
 // This function prints the variables for the catalog item passed as parameter.

@@ -6,7 +6,7 @@ Agnosticv is a generic way of organizing and merging YAML files in order to mana
 
 Currently the project is composed of:
 
-. link:https://github.com/redhat-gpte-devopsautomation/agnosticv-operator[agnosticv-operator] is an **opinionated** implementation of agnosticv for Babylon. The operator works with agnosticv repos that have a known and fixed structure. It is used in our ogranization GPTE.
+. link:https://github.com/redhat-gpte-devopsautomation/agnosticv-operator[agnosticv-operator] is an **opinionated** implementation of agnosticv for Babylon. The operator works with agnosticv repos that have a known and fixed structure. It is used in our organization GPTE.
 . a link:cli[CLI] `agnosticv` that is more generic and compatible with the other one.
 
 
