@@ -81,7 +81,7 @@ __meta__:
   [...] output omitted
 --------------
 
-NOTE: `common.yaml` files are always included when merging. `agnosticv` stop searching for more when it cannot find a `common.yaml` file in the parent directory.
+NOTE: `common.yaml` files are always included when merging. `agnosticv` searches for those files as long as it is in the same git repository. If the files are not versioned with git, it is possible to "chroot" the search using the `--root` paremeter.
 
 == Build
 
