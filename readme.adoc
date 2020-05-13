@@ -91,8 +91,6 @@ go get
 go build -o agnosticv
 ----
 
-
-
 == File naming convention
 
 Some files are auto-included when merging. The following names are valid common yaml files:
