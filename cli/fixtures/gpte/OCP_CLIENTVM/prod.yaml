@@ -1,5 +1,6 @@
 ---
 clientvm_instance_type: t2.large
+
 __meta__:
   catalog:
     namespace: openshift

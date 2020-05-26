@@ -1,0 +1,135 @@
+= Agnostic Vars
+
+== Description
+
+Agnosticv is a generic way of organizing and merging YAML files in order to manage a Catalog.
+
+Currently the project is composed of:
+
+. link:https://github.com/redhat-gpte-devopsautomation/agnosticv-operator[agnosticv-operator] is an **opinionated** implementation of agnosticv for Babylon. The operator works with agnosticv repos that have a known and fixed structure. It is used in our organization GPTE.
+. a link:cli[CLI] `agnosticv` that is more generic and compatible with the other one.
+
+
+
+=== Example of agnosticv repositories
+
+. public: see in link:cli/fixtures[cli/fixtures] for an example of structure of a catalog
+. private link:https://github.com/redhat-gpe/agnosticv[GPTE agnosticv repository]
+. private link:https://github.com/redhat-gpe/2020Summit-AgnosticV[2020Summit-AgnosticV repository]
+
+
+
+== `agnosticv` CLI
+
+The CLI `agnosticv` has the following capabilities:
+
+- list all the catalog items present in a directory (or local directory)
+- print the vars of an item of the catalog
+
+
+.Usage
+----
+Usage of ./agnosticv:
+  -debug
+        Debug mode
+  -list
+        List all the catalog items present in current directory.
+  -merge string
+        Merge and print variables of a catalog item.
+  -root string
+        The top directory of the agnosticv files. Files outside of this directory will not be merged.
+        By default, it's empty, and the scope of the git repository is used, so you should not
+        need this parameter unless your files are not in a git repository.
+
+----
+
+
+.Using local directory
+--------------
+cli $ ./agnosticv --list
+fixtures/gpte/OCP_CLIENTVM/dev.yaml
+fixtures/gpte/OCP_CLIENTVM/prod.yaml
+fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml
+fixtures/test/BABYLON_EMPTY_CONFIG/prod.yaml
+fixtures/test/BABYLON_EMPTY_CONFIG/test.yaml
+fixtures/test/BABYLON_EMPTY_CONFIG_AWS/dev.yaml
+fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
+fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml
+fixtures/test/BABYLON_EMPTY_CONFIG_OSP/dev.yaml
+fixtures/test/BABYLON_EMPTY_CONFIG_OSP/prod.yaml
+fixtures/test/BABYLON_EMPTY_CONFIG_OSP/test.yaml
+--------------
+
+.Print the var of an item
+--------------
+cli $ ./agnosticv --merge fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
+---
+# MERGED:
+# fixtures/common.yaml
+# fixtures/test/account.yaml
+# fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml
+# fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
+__meta__:
+  deployer:
+    scm_ref: test-empty-config-test-0.5
+    scm_type: git
+    scm_url: https://github.com/redhat-cop/agnosticd.git
+    type: agnosticd
+  secrets:
+  - from-top-common.yml
+  - name: gpte
+  [...] output omitted
+--------------
+
+NOTE: `common.yaml` files are always included when merging. `agnosticv` searches for those files as long as it is in the same git repository. If the files are not versioned with git, it is possible to "chroot" the search using the `--root` paremeter.
+
+== Build
+
+----
+cd cli
+go get
+go build -o agnosticv
+----
+
+== File naming convention
+
+Some files are auto-included when merging. The following names are valid common yaml files:
+
+- `common.yaml`
+- `common.yml`
+- `account.yaml`
+- `account.yml`
+
+The "leaf" files, or items, are just all the rest of the yaml files, having one of these extensions:
+
+- yml
+- yaml
+
+== Merging strategies
+
+When it comes to merging variables, there are different possible strategies.
+
+The default is the following
+
+|========================
+| What | Dictionaries | Lists | Strings / Numbers
+
+|`\\__meta__` and `agnosticv_meta` dictionaries
+| **merge**
+| **append**
+| **replace**
+
+| All the other vars
+
+Same behavior as if you were using ansible{nbsp}extra{nbsp}vars
+
+| **replace**
+| **replace**
+| **replace**
+|========================
+
+
+== See also
+
+- link:https://github.com/redhat-cop/agnosticd[AgnosticD] deployer
+- link:https://github.com/redhat-cop/babylon[Babylon] project

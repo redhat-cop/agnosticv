@@ -1,0 +1,13 @@
+__meta__:
+  secrets:
+  - from-top-common.yml
+  toplist:
+  - from-root-common.yml
+foo: from-root-common
+fooc: from-root-common
+foodev: from-root-common
+toplist:
+- from-root-common
+
+topdict:
+  a: from-root-comon
