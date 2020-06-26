@@ -17,8 +17,6 @@ Currently the project is composed of:
 . private link:https://github.com/redhat-gpe/agnosticv[GPTE agnosticv repository]
 . private link:https://github.com/redhat-gpe/2020Summit-AgnosticV[2020Summit-AgnosticV repository]
 
-
-
 == `agnosticv` CLI
 
 The CLI `agnosticv` has the following capabilities:
@@ -82,6 +80,10 @@ __meta__:
 --------------
 
 NOTE: `common.yaml` files are always included when merging. `agnosticv` searches for those files as long as it is in the same git repository. If the files are not versioned with git, it is possible to "chroot" the search using the `--root` paremeter.
+
+== Install
+
+Go to link:https://github.com/redhat-cop/agnosticv/releases/[the release page] and download the binary for your architecture (linux, mac, windows, ..).
 
 == Build
 
