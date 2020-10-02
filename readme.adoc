@@ -16,6 +16,7 @@ Currently the project is composed of:
 . public: see in link:cli/fixtures[cli/fixtures] for an example of structure of a catalog
 . private link:https://github.com/redhat-gpe/agnosticv[GPTE agnosticv repository]
 . private link:https://github.com/redhat-gpe/2020Summit-AgnosticV[2020Summit-AgnosticV repository]
+. private link:https://github.com/redhat-gpe/RHTR_2020_agnosticV/[RHTR_2020_agnosticV repository]
 
 == `agnosticv` CLI
 
