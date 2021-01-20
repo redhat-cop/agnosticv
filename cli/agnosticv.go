@@ -71,6 +71,14 @@ func walkList(p string, info os.FileInfo, err error) error {
 		return err
 	}
 
+	// Ignore .git and .github directories
+	if strings.HasPrefix(p, ".git") {
+		return nil
+	}
+	if strings.Contains(p, "/.git") {
+		return nil
+	}
+
 	switch info.Name() {
 	case "common.yml", "common.yaml", "account.yml", "account.yaml":
 		return nil
