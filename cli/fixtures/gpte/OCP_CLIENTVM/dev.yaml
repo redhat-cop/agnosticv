@@ -4,6 +4,8 @@ clientvm_instance_type: t2.medium
 
 purpose: development
 
+foodict:
+  bar: ok
 
 ##########################
 # Babylon meta variables #

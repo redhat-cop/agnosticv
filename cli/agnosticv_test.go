@@ -50,3 +50,51 @@ func TestChrooted(t *testing.T) {
 		t.Error()
 	}
 }
+
+
+func TestWalk(t *testing.T) {
+	testCases := []struct {
+		description string
+		hasFlags []string
+		count int
+	}{
+		{
+			description: "No JMES filtering",
+			hasFlags: []string{},
+			count: 12,
+		},
+		{
+			description: "key foodict is present",
+			hasFlags: []string{"foodict"},
+			count: 1,
+		},
+		{
+			description: "env_type is clientvm",
+			hasFlags: []string{"env_type == 'ocp-clientvm'"},
+			count: 2,
+		},
+		{
+			description: "Is a Babylon catalog item",
+			hasFlags: []string{"__meta__.catalog"},
+			count: 5,
+		},
+		{
+			description: "env_type is clientvm and purpose is development",
+			hasFlags: []string{
+				"env_type == 'ocp-clientvm'",
+				"purpose == 'development'",
+			},
+			count: 1,
+		},
+	}
+
+	for _, tc := range testCases {
+		result, err := findCatalogItems(".", tc.hasFlags)
+		if err != nil {
+			t.Error()
+		}
+		if len(result) != tc.count {
+			t.Error(tc.description, len(result), tc.count)
+		}
+	}
+}

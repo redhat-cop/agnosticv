@@ -4,13 +4,15 @@ import (
 	"flag"
 	"fmt"
 	"github.com/imdario/mergo"
-	"gopkg.in/yaml.v2"
+	"github.com/jmespath/go-jmespath"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	yaml "gopkg.in/yaml.v2"
+	yaml3 "gopkg.in/yaml.v3"
 )
 
 // Logs
@@ -20,10 +22,22 @@ var logDebug *log.Logger
 var logReport *log.Logger
 
 // Flags
+type arrayFlags []string
 var listFlag bool
+var hasFlags arrayFlags
 var mergeFlag string
 var debugFlag bool
 var rootFlag string
+
+// Methods to be able to use the flag multiple times
+func (i *arrayFlags) String() string {
+    return fmt.Sprintf("%s", *i)
+}
+
+func (i *arrayFlags) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
 
 // Global variables
 
@@ -31,6 +45,14 @@ var workDir string
 
 func parseFlags() {
 	flag.BoolVar(&listFlag, "list", false, "List all the catalog items present in current directory.")
+	flag.Var(&hasFlags, "has", `Use with --list only. Filter catalog items using a JMESPath expression.
+Can be used several time (act like AND).
+
+Examples:
+--has __meta__.catalog
+--has "env_type == 'ocp-clientvm'"
+--has "to_string(worker_instance_count) == '2'"
+`)
 	flag.BoolVar(&debugFlag, "debug", false, "Debug mode")
 	flag.StringVar(&mergeFlag, "merge", "", "Merge and print variables of a catalog item.")
 	flag.StringVar(&rootFlag, "root", "", `The top directory of the agnosticv files. Files outside of this directory will not be merged.
@@ -38,13 +60,20 @@ By default, it's empty, and the scope of the git repository is used, so you shou
 need this parameter unless your files are not in a git repository.`)
 
 	flag.Parse()
+
+	if len(hasFlags) > 0 && listFlag == false {
+		flag.PrintDefaults()
+		os.Exit(2)
+	}
+
 	if mergeFlag == "" && listFlag == false {
 		flag.PrintDefaults()
+		os.Exit(2)
 	}
 
 	if rootFlag != "" {
 		if ! fileExists(rootFlag) {
-			logErr.Fatalf("File %s does not exist", rootFlag)
+			log.Fatalf("File %s does not exist", rootFlag)
 		}
 
 		if rootAbs, err := filepath.Abs(rootFlag) ; err == nil {
@@ -64,30 +93,57 @@ func initLoggers() {
 	logReport = log.New(os.Stdout, "+++ ", log.LstdFlags)
 }
 
-// walkList is the walkFunc that will print all the catalog items
-func walkList(p string, info os.FileInfo, err error) error {
-	if err != nil {
-		logErr.Printf("%q: %v\n", p, err)
-		return err
-	}
+func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
+	result := []string{}
+	os.Chdir(workdir)
+	err := filepath.Walk(".", func(p string, info os.FileInfo, err error) error {
+		if err != nil {
+			logErr.Printf("%q: %v\n", p, err)
+			return err
+		}
 
-	// Ignore .git and .github directories
-	if strings.HasPrefix(p, ".git") {
-		return nil
-	}
-	if strings.Contains(p, "/.git") {
-		return nil
-	}
+		// Ignore .git and .github directories
+		if strings.HasPrefix(p, ".git") {
+			return nil
+		}
+		if strings.Contains(p, "/.git") {
+			return nil
+		}
 
-	switch info.Name() {
-	case "common.yml", "common.yaml", "account.yml", "account.yaml":
+		switch info.Name() {
+		case "common.yml", "common.yaml", "account.yml", "account.yaml":
+			return nil
+		}
+		switch path.Ext(info.Name()) {
+		case ".yml", ".yaml":
+			if len(hasFlags) > 0 {
+				logDebug.Println("hasFlags", hasFlags)
+				// Here we need yaml.v3 in order to use jmespath
+				merged, _ := mergeVars(p, "v3")
+
+				for _, hasFlag := range hasFlags {
+					result, err := jmespath.Search(hasFlag, merged)
+					if err != nil {
+						logErr.Printf("ERROR: JMESPath '%q' not correct, %v", hasFlag, err)
+						return err
+					}
+
+					logDebug.Printf("merged=%#v\n", merged)
+					logDebug.Printf("result=%#v\n", result)
+
+					// If JMESPath expression does not match, skip file
+					if result == nil || result == false {
+						return nil
+					}
+				}
+			}
+			result = append(result, p)
+		}
+
 		return nil
-	}
-	switch path.Ext(info.Name()) {
-	case ".yml", ".yaml":
-		fmt.Printf("%s\n", p)
-	}
-	return nil
+	})
+
+	return result, err
 }
 
 func fileExists(filename string) bool {
@@ -109,10 +165,9 @@ func parentDir(path string) string {
 	if err != nil {
 		if os.IsNotExist(err) {
 			return filepath.Dir(path)
-		} else {
-			fmt.Println("Error with stat")
-			logErr.Fatal(err)
 		}
+		fmt.Println("Error with stat")
+		logErr.Fatal(err)
 	}
 
 	var currentDir string
@@ -222,7 +277,19 @@ func printPaths(mergeList []string) {
 	}
 }
 
-func mergeVars(mergeList []string) interface{} {
+func mergeVars(p string, version string) (map[string]interface{}, []string) {
+	// Work with Absolute paths
+	if ! filepath.IsAbs(p) {
+		if abs, errAbs := filepath.Abs(p); errAbs == nil {
+			p = abs
+		} else {
+			logErr.Fatal(errAbs)
+		}
+	}
+
+	mergeList := getMergeList(p)
+	logDebug.Printf("%+v\n", mergeList)
+
 	final := make(map[string]interface{})
 	meta := make(map[string]interface{})
 
@@ -235,7 +302,12 @@ func mergeVars(mergeList []string) interface{} {
 			logErr.Fatal(err)
 		}
 
-		err = yaml.Unmarshal(content, &current)
+		switch version {
+		case "v2":
+			err = yaml.Unmarshal(content, &current)
+		case "v3":
+			err = yaml3.Unmarshal(content, &current)
+		}
 		logDebug.Println("len(current)", len(current))
 
 		if err != nil {
@@ -261,12 +333,12 @@ func mergeVars(mergeList []string) interface{} {
 		final["agnosticv_meta"] = val
 	}
 
-	return final
+	return final, mergeList
 }
 
 func main() {
-	initLoggers()
 	parseFlags()
+	initLoggers()
 
 	// Save current work directory
 	if wd, errWorkDir := os.Getwd() ; errWorkDir == nil {
@@ -276,28 +348,20 @@ func main() {
 	}
 
 	if listFlag {
-		err := filepath.Walk(".", walkList)
+		catalogItems, err := findCatalogItems(workDir, hasFlags)
 
 		if err != nil {
 			logErr.Printf("error walking the path %q: %v\n", ".", err)
 			return
 		}
+		for _, ci := range catalogItems {
+			fmt.Println(ci)
+		}
 	}
 
 	if mergeFlag != "" {
-		// Work with Absolute paths
-		if ! filepath.IsAbs(mergeFlag) {
-			if abs, errAbs := filepath.Abs(mergeFlag); errAbs == nil {
-				mergeFlag = abs
-			} else {
-				logErr.Fatal(errAbs)
-			}
-		}
 
-		mergeList := getMergeList(mergeFlag)
-		logDebug.Printf("%+v\n", mergeList)
-
-		merged := mergeVars(mergeList)
+		merged, mergeList := mergeVars(mergeFlag, "v3")
 		out, _:= yaml.Marshal(merged)
 
 		fmt.Printf("---\n")

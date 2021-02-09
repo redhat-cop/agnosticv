@@ -31,6 +31,15 @@ The CLI `agnosticv` has the following capabilities:
 Usage of ./agnosticv:
   -debug
         Debug mode
+  -has value
+        Use with --list only. Filter catalog items using a JMESPath expression.
+        Can be used several time (act like AND).
+
+        Examples:
+        --has __meta__.catalog
+        --has "env_type == 'ocp-clientvm'"
+        --has "to_string(worker_instance_count) == '2'"
+
   -list
         List all the catalog items present in current directory.
   -merge string
@@ -39,9 +48,7 @@ Usage of ./agnosticv:
         The top directory of the agnosticv files. Files outside of this directory will not be merged.
         By default, it's empty, and the scope of the git repository is used, so you should not
         need this parameter unless your files are not in a git repository.
-
 ----
-
 
 .Using local directory
 --------------
