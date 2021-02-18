@@ -1,0 +1,43 @@
+= AgnosticV CLI =
+
+== Build ==
+
+----
+go build -o agnosticv
+----
+
+For releases, use link:https://github.com/mitchellh/gox[gox] to build all target archs:
+
+----
+$ gox --output="agnosticv_{{.OS}}_{{.Arch}}"
+Number of parallel builds: 7
+
+-->    darwin/amd64: github.com/redhat-cop/agnosticv/cli
+-->    linux/mipsle: github.com/redhat-cop/agnosticv/cli
+-->       linux/386: github.com/redhat-cop/agnosticv/cli
+-->      darwin/386: github.com/redhat-cop/agnosticv/cli
+-->      netbsd/arm: github.com/redhat-cop/agnosticv/cli
+-->      netbsd/386: github.com/redhat-cop/agnosticv/cli
+-->   windows/amd64: github.com/redhat-cop/agnosticv/cli
+-->    linux/mips64: github.com/redhat-cop/agnosticv/cli
+-->     linux/s390x: github.com/redhat-cop/agnosticv/cli
+-->  linux/mips64le: github.com/redhat-cop/agnosticv/cli
+-->   freebsd/amd64: github.com/redhat-cop/agnosticv/cli
+-->     linux/amd64: github.com/redhat-cop/agnosticv/cli
+-->       linux/arm: github.com/redhat-cop/agnosticv/cli
+-->     freebsd/386: github.com/redhat-cop/agnosticv/cli
+-->   openbsd/amd64: github.com/redhat-cop/agnosticv/cli
+-->     openbsd/386: github.com/redhat-cop/agnosticv/cli
+-->     freebsd/arm: github.com/redhat-cop/agnosticv/cli
+-->      linux/mips: github.com/redhat-cop/agnosticv/cli
+-->     windows/386: github.com/redhat-cop/agnosticv/cli
+-->    netbsd/amd64: github.com/redhat-cop/agnosticv/cli
+----
+
+Then attach the binaries to the release in github.
+
+== Tests ==
+
+----
+go test -v
+----
