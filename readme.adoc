@@ -6,10 +6,8 @@ Agnosticv is a generic way of organizing and merging YAML files in order to mana
 
 Currently the project is composed of:
 
-. link:https://github.com/redhat-gpte-devopsautomation/agnosticv-operator[agnosticv-operator] is an **opinionated** implementation of agnosticv for Babylon. The operator works with agnosticv repos that have a known and fixed structure. It is used in our organization GPTE.
-. a link:cli[CLI] `agnosticv` that is more generic and compatible with the other one.
-
-
+. link:cli[CLI] `agnosticv`, a generic implementation.
+. link:https://github.com/redhat-gpte-devopsautomation/agnosticv-operator[agnosticv-operator] an OpenShift operator that uses the CLI and generates OpenShift Custom Resources for link:https://github.com/redhat-cop/babylon[Babylon] based on the content of the agnosticv repositories. The operator is more opinionated than the CLI as it expects a specific file structure in the agnosticV repository. It is used in our GPTE organization to manage our catalogs.
 
 === Example of agnosticv repositories
 
@@ -47,7 +45,7 @@ Usage of ./agnosticv:
   -root string
         The top directory of the agnosticv files. Files outside of this directory will not be merged.
         By default, it's empty, and the scope of the git repository is used, so you should not
-        need this parameter unless your files are not in a git repository.
+        need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.
 ----
 
 .Using local directory
@@ -87,7 +85,7 @@ __meta__:
   [...] output omitted
 --------------
 
-NOTE: `common.yaml` files are always included when merging. `agnosticv` searches for those files as long as it is in the same git repository. If the files are not versioned with git, it is possible to "chroot" the search using the `--root` paremeter.
+NOTE: `common.yaml` files are always included when merging. `agnosticv` searches for those files as long as it is in the same git repository. If the files are not versioned with git, it is possible to "chroot" the search using the `--root` parameter.
 
 == Install
 
@@ -114,6 +112,8 @@ The "leaf" files, or items, are just all the rest of the yaml files, having one 
 
 - yml
 - yaml
+
+All files starting with `.`, dotfiles, are ignored.
 
 == Merging strategies
 
