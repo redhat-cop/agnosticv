@@ -361,7 +361,7 @@ func main() {
 
 	if mergeFlag != "" {
 
-		merged, mergeList := mergeVars(mergeFlag, "v3")
+		merged, mergeList := mergeVars(mergeFlag, "v2")
 		out, _:= yaml.Marshal(merged)
 
 		fmt.Printf("---\n")
