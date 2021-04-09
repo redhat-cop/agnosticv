@@ -57,7 +57,7 @@ Examples:
 	flag.StringVar(&mergeFlag, "merge", "", "Merge and print variables of a catalog item.")
 	flag.StringVar(&rootFlag, "root", "", `The top directory of the agnosticv files. Files outside of this directory will not be merged.
 By default, it's empty, and the scope of the git repository is used, so you should not
-need this parameter unless your files are not in a git repository.`)
+need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.`)
 
 	flag.Parse()
 
@@ -71,7 +71,15 @@ need this parameter unless your files are not in a git repository.`)
 		os.Exit(2)
 	}
 
+	if mergeFlag != "" && listFlag == true {
+		log.Fatal("You cannot use --merge and --list simultaneously.")
+	}
+
 	if rootFlag != "" {
+		if listFlag {
+			log.Fatal("You cannot use --root with --list, list is relative to current directory.")
+		}
+
 		if ! fileExists(rootFlag) {
 			log.Fatalf("File %s does not exist", rootFlag)
 		}
@@ -102,11 +110,8 @@ func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 			return err
 		}
 
-		// Ignore .git and .github directories
-		if strings.HasPrefix(p, ".git") {
-			return nil
-		}
-		if strings.Contains(p, "/.git") {
+		// Ignore .dotfiles (.git, .travis.yml, ...)
+		if strings.HasPrefix(info.Name(), ".") {
 			return nil
 		}
 
@@ -186,6 +191,32 @@ func chrooted(root string, path string) bool {
 	return strings.HasPrefix(path, root)
 }
 
+func findRoot(item string) string {
+	if itemAbs, err := filepath.Abs(item) ; err == nil {
+		item = itemAbs
+	}
+
+	if item == "/" {
+		log.Fatal("Root not found.")
+	}
+
+	fileinfo, err := os.Stat(item)
+
+	if os.IsNotExist(err) {
+		log.Fatal(item, "File does not exist.")
+	}
+
+	// If it's a dir, run with current directory
+	if fileinfo.IsDir() {
+		if fileExists(filepath.Join(item, ".git")) {
+			// .git dir exists, root found.
+			return item
+		}
+	}
+
+	return findRoot(parentDir(item))
+}
+
 // This function return the next file to be included in the merge.
 // it returns the empty string "" if not found.
 // pos can be a directory or a file
@@ -201,15 +232,10 @@ func nextCommonFile(position string) string {
 	// If position is a common file, try with parent dir
 	for _, commonFile := range validCommonFileNames {
 		if path.Base(position) == commonFile {
-			// If it's already the root of the git directory, then stop.
-			if fileExists(filepath.Join(filepath.Dir(position), ".git")) {
-				// No common file found in current repo
-				return ""
-			}
-
 			// If parent is out of chroot, stop
-			if rootFlag != "" && ! chrooted(rootFlag, parentDir(position)) {
-				logDebug.Println("parent of", position, ",", parentDir(position), "is out of chroot", rootFlag)
+			if !chrooted(rootFlag, parentDir(position)) {
+				logDebug.Println("parent of", position, ",", parentDir(position),
+					"is out of chroot", rootFlag)
 				return ""
 			}
 
@@ -236,16 +262,12 @@ func nextCommonFile(position string) string {
 		}
 	}
 
-	if fileExists(filepath.Join(filepath.Dir(position), ".git")) {
-		// No common file found in current repo
-		return ""
-	}
-
 	if position == "/" { return "" }
 
 	// If parent is out of chroot, stop
-	if rootFlag != "" && ! chrooted(rootFlag, parentDir(position)) {
-		logDebug.Println("parent of", position, ",", parentDir(position), "is out of chroot", rootFlag)
+	if !chrooted(rootFlag, parentDir(position)) {
+		logDebug.Println("parent of", position, ",", parentDir(position),
+			"is out of chroot", rootFlag)
 		return ""
 	}
 
@@ -360,6 +382,11 @@ func main() {
 	}
 
 	if mergeFlag != "" {
+
+		// For merge, always determine the chroot
+		if rootFlag == "" {
+			rootFlag = findRoot(mergeFlag)
+		}
 
 		merged, mergeList := mergeVars(mergeFlag, "v2")
 		out, _:= yaml.Marshal(merged)
