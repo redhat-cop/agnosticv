@@ -124,7 +124,12 @@ func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 			if len(hasFlags) > 0 {
 				logDebug.Println("hasFlags", hasFlags)
 				// Here we need yaml.v3 in order to use jmespath
-				merged, _ := mergeVars(p, "v3")
+				err, merged, _ := mergeVars(p, "v3")
+				if err != nil {
+					// Print the error and move to next file
+					logErr.Println(err)
+					return nil
+				}
 
 				for _, hasFlag := range hasFlags {
 					result, err := jmespath.Search(hasFlag, merged)
@@ -299,13 +304,13 @@ func printPaths(mergeList []string) {
 	}
 }
 
-func mergeVars(p string, version string) (map[string]interface{}, []string) {
+func mergeVars(p string, version string) (error, map[string]interface{}, []string) {
 	// Work with Absolute paths
 	if ! filepath.IsAbs(p) {
 		if abs, errAbs := filepath.Abs(p); errAbs == nil {
 			p = abs
 		} else {
-			logErr.Fatal(errAbs)
+			return errAbs, map[string]interface{}{}, []string{}
 		}
 	}
 
@@ -321,7 +326,7 @@ func mergeVars(p string, version string) (map[string]interface{}, []string) {
 		logDebug.Println("reading", mergeList[i])
 		content, err := ioutil.ReadFile(mergeList[i])
 		if err != nil {
-			logErr.Fatal(err)
+			return err, map[string]interface{}{}, []string{}
 		}
 
 		switch version {
@@ -333,15 +338,23 @@ func mergeVars(p string, version string) (map[string]interface{}, []string) {
 		logDebug.Println("len(current)", len(current))
 
 		if err != nil {
-			logErr.Fatalf("cannot unmarshal data: %v", err)
+			logErr.Println("cannot unmarshal data")
+			return err, map[string]interface{}{}, []string{}
 		}
 
 		for k,v := range current {
 			final[k] = v
 		}
 
-		if err = mergo.Merge(&meta, current, mergo.WithOverride, mergo.WithOverwriteWithEmptyValue, mergo.WithAppendSlice ); err != nil {
-			logErr.Fatal(err)
+		if err = mergo.Merge(
+			&meta,
+			current,
+			mergo.WithOverride,
+			mergo.WithOverwriteWithEmptyValue,
+			mergo.WithAppendSlice,
+		); err != nil {
+			logErr.Println("Error in mergo.Merge()")
+			return err, map[string]interface{}{}, []string{}
 		}
 		logDebug.Println("len(meta)", len(meta))
 		logDebug.Println("len(final)", len(final))
@@ -355,7 +368,7 @@ func mergeVars(p string, version string) (map[string]interface{}, []string) {
 		final["agnosticv_meta"] = val
 	}
 
-	return final, mergeList
+	return nil, final, mergeList
 }
 
 func main() {
@@ -388,7 +401,10 @@ func main() {
 			rootFlag = findRoot(mergeFlag)
 		}
 
-		merged, mergeList := mergeVars(mergeFlag, "v2")
+		err, merged, mergeList := mergeVars(mergeFlag, "v2")
+		if err != nil {
+			logErr.Fatal(err)
+		}
 		out, _:= yaml.Marshal(merged)
 
 		fmt.Printf("---\n")
