@@ -338,7 +338,10 @@ func mergeVars(p string, version string) (error, map[string]interface{}, []strin
 		logDebug.Println("len(current)", len(current))
 
 		if err != nil {
-			logErr.Println("cannot unmarshal data")
+			logErr.Println("cannot unmarshal data when merging",
+				p,
+				". Error is in",
+				mergeList[i])
 			return err, map[string]interface{}{}, []string{}
 		}
 
@@ -353,7 +356,7 @@ func mergeVars(p string, version string) (error, map[string]interface{}, []strin
 			mergo.WithOverwriteWithEmptyValue,
 			mergo.WithAppendSlice,
 		); err != nil {
-			logErr.Println("Error in mergo.Merge()")
+			logErr.Println("Error in mergo.Merge() when merging", p)
 			return err, map[string]interface{}{}, []string{}
 		}
 		logDebug.Println("len(meta)", len(meta))
