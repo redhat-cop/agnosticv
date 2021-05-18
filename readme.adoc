@@ -18,6 +18,12 @@ Currently the project is composed of:
 
 == `agnosticv` CLI
 
+=== Install
+
+Download the binary for your architecture (linux, mac, windows, ..) from link:https://github.com/redhat-cop/agnosticv/releases/[release page].
+
+=== Usage
+
 The CLI `agnosticv` has the following capabilities:
 
 - list all the catalog items present in a directory (or local directory)
@@ -86,10 +92,6 @@ __meta__:
 --------------
 
 NOTE: `common.yaml` files are always included when merging. `agnosticv` searches for those files as long as it is in the same git repository. If the files are not versioned with git, it is possible to "chroot" the search using the `--root` parameter.
-
-== Install
-
-Go to link:https://github.com/redhat-cop/agnosticv/releases/[the release page] and download the binary for your architecture (linux, mac, windows, ..).
 
 == Build
 
