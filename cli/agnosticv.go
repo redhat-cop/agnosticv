@@ -111,7 +111,7 @@ func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 		}
 
 		// Ignore .dotfiles (.git, .travis.yml, ...)
-		if strings.HasPrefix(info.Name(), ".") {
+		if strings.HasPrefix(info.Name(), ".") || strings.HasPrefix(p, ".") {
 			return nil
 		}
 
