@@ -11,6 +11,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"regexp"
+	"bufio"
 	yaml "gopkg.in/yaml.v2"
 	yaml3 "gopkg.in/yaml.v3"
 )
@@ -101,6 +103,80 @@ func initLoggers() {
 	logReport = log.New(os.Stdout, "+++ ", log.LstdFlags)
 }
 
+
+// isPathCatalogItem checks if p is a catalog item by looking at its path.
+// returns true or false
+// root = the root directory of the agnosticV repo.
+func isPathCatalogItem(root, p string) bool {
+
+	if !chrooted(root, p) {
+		return false
+	}
+
+	// Ignore all catalog items that are in a directory starting with a "."
+	// or are dotfiles.
+
+	for _, file := range strings.Split(p[len(root)+1:], string(os.PathSeparator)) {
+		// pass special dirs
+		if file == "." || file == ".." {
+			continue
+		}
+
+		// Ignore includes directories or file
+		if file == "includes" {
+			return false
+		}
+
+		// Ignore dotfiles
+		if strings.HasPrefix(file, ".") {
+			return false
+		}
+	}
+
+	// Catalog items are yaml files only.
+	if !strings.HasSuffix(p, ".yml") && !strings.HasSuffix(p, ".yaml") {
+		return false
+	}
+
+	return true
+}
+
+var regexNotCatalogItem = regexp.MustCompile(`^#[ \t]*agnosticv_catalog_item[ \t]*=[ \t]*false[ \t]*$`)
+
+// isCatalogItem checks if a path is a valid catalog item.
+// root is the root directory of the local agnosticV repo.
+// returns true|false
+func isCatalogItem(root, path string) bool {
+	if !isPathCatalogItem(root, path) {
+		return false
+	}
+
+	if !fileExists(path) {
+		return false
+	}
+
+	file, err := os.Open(path)
+	defer file.Close()
+
+	if err != nil {
+		logErr.Printf("%v\n", err)
+		return false
+	}
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if regexNotCatalogItem.MatchString(line) {
+			return false
+		}
+
+	}
+
+	return true
+}
+
 func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 	result := []string{}
 	os.Chdir(workdir)
@@ -115,6 +191,15 @@ func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 			return nil
 		}
 
+		if pAbs, err := filepath.Abs(p) ; err == nil {
+			if !isCatalogItem(findRoot(workdir), pAbs) {
+				return nil
+			}
+		} else {
+			logErr.Printf("%v\n", err)
+			return nil
+		}
+
 		switch info.Name() {
 		case "common.yml", "common.yaml", "account.yml", "account.yaml":
 			return nil
@@ -124,7 +209,7 @@ func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 			if len(hasFlags) > 0 {
 				logDebug.Println("hasFlags", hasFlags)
 				// Here we need yaml.v3 in order to use jmespath
-				err, merged, _ := mergeVars(p, "v3")
+				merged, _, err := mergeVars(p, "v3")
 				if err != nil {
 					// Print the error and move to next file
 					logErr.Println(err)
@@ -147,6 +232,7 @@ func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 					}
 				}
 			}
+
 			result = append(result, p)
 		}
 
@@ -192,8 +278,18 @@ func parentDir(path string) string {
 	return filepath.Dir(currentDir)
 }
 
+// chrooted function compares strings and returns true if
+// path is chrooted in root.
+// It's a poor man's chroot
 func chrooted(root string, path string) bool {
-	return strings.HasPrefix(path, root)
+	if root == path {
+		return true
+	}
+	suffix := ""
+	if !strings.HasSuffix(root, "/") {
+		suffix = "/"
+	}
+	return strings.HasPrefix(path, root + suffix)
 }
 
 func findRoot(item string) string {
@@ -304,13 +400,13 @@ func printPaths(mergeList []string) {
 	}
 }
 
-func mergeVars(p string, version string) (error, map[string]interface{}, []string) {
+func mergeVars(p string, version string) (map[string]interface{}, []string, error) {
 	// Work with Absolute paths
 	if ! filepath.IsAbs(p) {
 		if abs, errAbs := filepath.Abs(p); errAbs == nil {
 			p = abs
 		} else {
-			return errAbs, map[string]interface{}{}, []string{}
+			return map[string]interface{}{}, []string{}, errAbs
 		}
 	}
 
@@ -326,7 +422,7 @@ func mergeVars(p string, version string) (error, map[string]interface{}, []strin
 		logDebug.Println("reading", mergeList[i])
 		content, err := ioutil.ReadFile(mergeList[i])
 		if err != nil {
-			return err, map[string]interface{}{}, []string{}
+			return map[string]interface{}{}, []string{}, err
 		}
 
 		switch version {
@@ -342,7 +438,7 @@ func mergeVars(p string, version string) (error, map[string]interface{}, []strin
 				p,
 				". Error is in",
 				mergeList[i])
-			return err, map[string]interface{}{}, []string{}
+			return map[string]interface{}{}, []string{}, err
 		}
 
 		for k,v := range current {
@@ -357,7 +453,7 @@ func mergeVars(p string, version string) (error, map[string]interface{}, []strin
 			mergo.WithAppendSlice,
 		); err != nil {
 			logErr.Println("Error in mergo.Merge() when merging", p)
-			return err, map[string]interface{}{}, []string{}
+			return map[string]interface{}{}, []string{}, err
 		}
 		logDebug.Println("len(meta)", len(meta))
 		logDebug.Println("len(final)", len(final))
@@ -371,10 +467,11 @@ func mergeVars(p string, version string) (error, map[string]interface{}, []strin
 		final["agnosticv_meta"] = val
 	}
 
-	return nil, final, mergeList
+	return final, mergeList, nil
 }
 
 func main() {
+
 	parseFlags()
 	initLoggers()
 
@@ -404,7 +501,7 @@ func main() {
 			rootFlag = findRoot(mergeFlag)
 		}
 
-		err, merged, mergeList := mergeVars(mergeFlag, "v2")
+		merged, mergeList, err := mergeVars(mergeFlag, "v2")
 		if err != nil {
 			logErr.Fatal(err)
 		}

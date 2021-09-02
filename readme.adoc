@@ -116,7 +116,19 @@ The "leaf" files, or items, are just all the rest of the yaml files, having one 
 - yml
 - yaml
 
-All files starting with `.`, dotfiles, are ignored.
+You can list all catalog items in a directory by using the `--list` parameter.
+
+=== Files ignored ===
+
+* Any dotfile is ignored. Ex: `.git`
+* Any directory `includes` is ignored. The files in those directory are not considered as catalog items.
+* Any file containing:
++
+----
+#agnosticv_catalog_item = false
+----
++
+is ignored.
 
 == Merging strategies
 

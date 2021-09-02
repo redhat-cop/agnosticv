@@ -34,20 +34,137 @@ func TestParentDir(t *testing.T) {
 }
 
 func TestChrooted(t *testing.T) {
-	if chrooted("/ok", "/") != false {
-		t.Error()
+	testCases := []struct {
+		root string
+		path string
+		result bool
+	}{
+		{
+			root: "/ok",
+			path: "/",
+			result: false,
+		},
+		{
+			root: "ok",
+			path: "/",
+			result: false,
+		},
+		{
+			root: "foo/bar",
+			path: "foo/bar",
+			result: true,
+		},
+		{
+			root: "foo/bar",
+			path: "foo/bar/a",
+			result: true,
+		},
+		{
+			root: "/ok",
+			path: "/ok/foo/bar",
+			result: true,
+		},
+		{
+			root: "/",
+			path: "/whatever",
+			result: true,
+		},
+		{
+			root: "/ok",
+			path: "/ok",
+			result: true,
+		},
+		{
+			root: "/foo",
+			path: "/bar",
+			result: false,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/a.yaml",
+			result: true,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/a.yaml",
+			result: false,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/cc/a.yaml",
+			result: false,
+		},
 	}
-	if chrooted("/ok", "/ok/foo/bar") != true {
-		t.Error()
+
+	for _, tc := range testCases {
+		if tc.result != chrooted(tc.root, tc.path) {
+			t.Error(tc.root, tc.path, tc.result)
+		}
 	}
-	if chrooted("/", "/whatever") != true {
-		t.Error()
+}
+
+func TestIsPathCatalogItem(t *testing.T) {
+	testCases := []struct {
+		root string
+		path string
+		result bool
+	}{
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/a.yaml",
+			result: true,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/a.yaml",
+			result: false,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/.dotdir/a.yaml",
+			result: false,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/.dotfile.yaml",
+			result: false,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/notyaml",
+			result: false,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/cc/a.yaml",
+			result: false,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/d/e/f/a.yaml",
+			result: true,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/includes/e/f/a.yaml",
+			result: false,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/d/includes/f/a.yaml",
+			result: false,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/d/e/includes/a.yaml",
+			result: false,
+		},
 	}
-	if chrooted("/ok", "/ok") != true {
-		t.Error()
-	}
-	if chrooted("/foo", "/bar") != false {
-		t.Error()
+
+	for _, tc := range testCases {
+		if tc.result != isPathCatalogItem(tc.root, tc.path) {
+			t.Error(tc.root, tc.path, tc.result)
+		}
 	}
 }
 

@@ -1,4 +1,7 @@
 ---
+# optional:
+# agnosticv_catalog_item = false
+
 cloud_provider: none
 
 ##########################
