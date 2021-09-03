@@ -260,7 +260,7 @@ func parentDir(path string) string {
 		if os.IsNotExist(err) {
 			return filepath.Dir(path)
 		}
-		fmt.Println("Error with stat")
+		logErr.Println("Error with stat")
 		logErr.Fatal(err)
 	}
 
