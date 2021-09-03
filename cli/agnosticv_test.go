@@ -102,6 +102,69 @@ func TestChrooted(t *testing.T) {
 		}
 	}
 }
+func TestResolvePath(t *testing.T) {
+	testCases := []struct {
+		root string
+		path string
+		contextFile string
+		result string
+		description string
+		expectedErr error
+	}{
+		{
+			root: "/a/b/c",
+			path: "/d.yaml",
+			contextFile: "whatever",
+			result: "/a/b/c/d.yaml",
+			description: "include absolute path in AgnosticV repo",
+			expectedErr: nil,
+		},
+		{
+			root: "/a/b/c",
+			path: "/d/e/f.yaml",
+			contextFile: "whatever",
+			result: "/a/b/c/d/e/f.yaml",
+			description: "include absolute path in AgnosticV repo",
+			expectedErr: nil,
+		},
+		{
+			root: "/a/b/c",
+			path: "foo.yaml",
+			contextFile: "/a/b/c/d/bar.yaml",
+			result: "/a/b/c/d/foo.yaml",
+			description: "include relative path in AgnosticV repo",
+			expectedErr: nil,
+		},
+		{
+			root: "/a/b/c",
+			path: "../bar.yaml",
+			contextFile: "/a/b/c/d/foo.yaml",
+			result: "/a/b/c/bar.yaml",
+			description: "include relative path, with '..', in AgnosticV repo",
+			expectedErr: nil,
+		},
+		{
+			root: "/a/b/c",
+			path: "../../../../bar.yaml",
+			contextFile: "/a/b/c/d/foo.yaml",
+			result: "",
+			description: "include relative path, with many '..', in AgnosticV repo",
+			expectedErr: ErrorIncludeOutOfChroot,
+		},
+	}
+
+	for _, tc := range testCases {
+		result, err := resolvePath(tc.root, tc.path, tc.contextFile)
+
+		if err != tc.expectedErr {
+			t.Error(tc.description, "with", tc.root, tc.path, tc.contextFile, ":", err, "!=", tc.expectedErr)
+		}
+
+		if tc.result != result {
+			t.Error(tc.description, "with", tc.root, tc.path, tc.contextFile, ":", result, "!=", tc.result)
+		}
+	}
+}
 
 func TestIsPathCatalogItem(t *testing.T) {
 	testCases := []struct {
@@ -143,6 +206,11 @@ func TestIsPathCatalogItem(t *testing.T) {
 			root: "/a/b/c",
 			path: "/a/b/c/d/e/f/a.yaml",
 			result: true,
+		},
+		{
+			root: "/a/b/c",
+			path: "/a/b/c/common.yaml",
+			result: false,
 		},
 		{
 			root: "/a/b/c",
@@ -214,4 +282,101 @@ func TestWalk(t *testing.T) {
 			t.Error(tc.description, len(result), tc.count)
 		}
 	}
+}
+
+func TestParseInclude(t *testing.T) {
+	testCases := []struct {
+		line string
+		found bool
+		path string
+	}{
+		{
+			line: "#include /path/ok",
+			found: true,
+			path: "/path/ok",
+
+		},
+		{
+			line: "#include    /path/ok",
+			found: true,
+			path: "/path/ok",
+
+		},
+		{
+			line: "#include \"/path/ok\"",
+			found: true,
+			path: "/path/ok",
+
+		},
+		{
+			line: "#include \"/path/ok\"    ",
+			found: true,
+			path: "/path/ok",
+
+		},
+		{
+			line: "  #include \"/path/ok\"    ",
+			found: true,
+			path: "/path/ok",
+
+		},
+		{
+			line: "#iclude \"/path/ok\"    ",
+			found: false,
+			path: "",
+
+		},
+		{
+			line: "",
+			found: false,
+			path: "",
+
+		},
+		{
+			line: "#include \"/path  with space \" ",
+			found: true,
+			path: "/path  with space ",
+		},
+		{
+			line: "#include /path  with space without quotes ",
+			found: false,
+			path: "",
+		},
+	}
+
+	for _, tc := range testCases {
+		found, include := parseInclude(tc.line)
+		if found != tc.found || include.path != tc.path {
+			t.Error(tc, found, include)
+		}
+	}
+}
+
+
+func TestInclude(t *testing.T) {
+
+	merged, _, err := mergeVars("fixtures/gpte/OCP_CLIENTVM/dev.yaml", "v2")
+	if err != nil {
+		t.Error(err)
+	}
+
+	if val, ok := merged["from_include"]; ok {
+		if val != "notcatalogitem" {
+			t.Error("value 'from_include' is not 'notcatalogitem'")
+		}
+	} else {
+		t.Error("value 'from_include' not found in merge")
+	}
+
+	if _, ok := merged["from_include1"]; !ok {
+		t.Error("value 'from_include1' not found")
+	}
+
+	merged, _, err = mergeVars("fixtures/gpte/OCP_CLIENTVM/.testloop.yaml", "v2")
+
+	if err != ErrorIncludeLoop {
+		t.Error("ErrorIncludeLoop expected, got", err)
+	}
+
+
 }

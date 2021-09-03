@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"regexp"
+	"errors"
 	"bufio"
 	yaml "gopkg.in/yaml.v2"
 	yaml3 "gopkg.in/yaml.v3"
@@ -78,10 +79,6 @@ need this parameter unless your files are not in a git repository, or if you wan
 	}
 
 	if rootFlag != "" {
-		if listFlag {
-			log.Fatal("You cannot use --root with --list, list is relative to current directory.")
-		}
-
 		if ! fileExists(rootFlag) {
 			log.Fatalf("File %s does not exist", rootFlag)
 		}
@@ -113,6 +110,7 @@ func isPathCatalogItem(root, p string) bool {
 		return false
 	}
 
+
 	// Ignore all catalog items that are in a directory starting with a "."
 	// or are dotfiles.
 
@@ -133,6 +131,11 @@ func isPathCatalogItem(root, p string) bool {
 		}
 	}
 
+	switch path.Base(p) {
+	case "common.yml", "common.yaml", "account.yml", "account.yaml":
+		return false
+	}
+
 	// Catalog items are yaml files only.
 	if !strings.HasSuffix(p, ".yml") && !strings.HasSuffix(p, ".yaml") {
 		return false
@@ -146,16 +149,15 @@ var regexNotCatalogItem = regexp.MustCompile(`^#[ \t]*agnosticv_catalog_item[ \t
 // isCatalogItem checks if a path is a valid catalog item.
 // root is the root directory of the local agnosticV repo.
 // returns true|false
-func isCatalogItem(root, path string) bool {
-	if !isPathCatalogItem(root, path) {
+func isCatalogItem(root, p string) bool {
+	if !isPathCatalogItem(root, p) {
 		return false
 	}
 
-	if !fileExists(path) {
+	if !fileExists(p) {
 		return false
 	}
-
-	file, err := os.Open(path)
+	file, err := os.Open(p)
 	defer file.Close()
 
 	if err != nil {
@@ -178,8 +180,12 @@ func isCatalogItem(root, path string) bool {
 }
 
 func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
+	logDebug.Println("findCatalogItems(", workdir, hasFlags, ")")
 	result := []string{}
 	os.Chdir(workdir)
+	if rootFlag == "" {
+		rootFlag = findRoot(workdir)
+	}
 	err := filepath.Walk(".", func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			logErr.Printf("%q: %v\n", p, err)
@@ -192,7 +198,7 @@ func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 		}
 
 		if pAbs, err := filepath.Abs(p) ; err == nil {
-			if !isCatalogItem(findRoot(workdir), pAbs) {
+			if !isCatalogItem(rootFlag, pAbs) {
 				return nil
 			}
 		} else {
@@ -200,42 +206,34 @@ func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 			return nil
 		}
 
-		switch info.Name() {
-		case "common.yml", "common.yaml", "account.yml", "account.yaml":
-			return nil
-		}
-		switch path.Ext(info.Name()) {
-		case ".yml", ".yaml":
-			if len(hasFlags) > 0 {
-				logDebug.Println("hasFlags", hasFlags)
-				// Here we need yaml.v3 in order to use jmespath
-				merged, _, err := mergeVars(p, "v3")
-				if err != nil {
-					// Print the error and move to next file
-					logErr.Println(err)
-					return nil
-				}
-
-				for _, hasFlag := range hasFlags {
-					result, err := jmespath.Search(hasFlag, merged)
-					if err != nil {
-						logErr.Printf("ERROR: JMESPath '%q' not correct, %v", hasFlag, err)
-						return err
-					}
-
-					logDebug.Printf("merged=%#v\n", merged)
-					logDebug.Printf("result=%#v\n", result)
-
-					// If JMESPath expression does not match, skip file
-					if result == nil || result == false {
-						return nil
-					}
-				}
+		if len(hasFlags) > 0 {
+			logDebug.Println("hasFlags", hasFlags)
+			// Here we need yaml.v3 in order to use jmespath
+			merged, _, err := mergeVars(p, "v3")
+			if err != nil {
+				// Print the error and move to next file
+				logErr.Println(err)
+				return nil
 			}
 
-			result = append(result, p)
+			for _, hasFlag := range hasFlags {
+				r, err := jmespath.Search(hasFlag, merged)
+				if err != nil {
+					logErr.Printf("ERROR: JMESPath '%q' not correct, %v", hasFlag, err)
+					return err
+				}
+
+				logDebug.Printf("merged=%#v\n", merged)
+				logDebug.Printf("r=%#v\n", r)
+
+				// If JMESPath expression does not match, skip file
+				if r == nil || r == false {
+					return nil
+				}
+			}
 		}
 
+		result = append(result, p)
 		return nil
 	})
 
@@ -376,53 +374,177 @@ func nextCommonFile(position string) string {
 
 }
 
-// This function prints the variables for the catalog item passed as parameter.
-func getMergeList(path string) []string {
-	result := []string{path}
-	for previous, next := "", nextCommonFile(path); next != "" && next != previous; next = nextCommonFile(next) {
-		result = append(result, next)
+// function getMergeList return the merge list for a catalog items
+// merge list contains: common files and includes.
+func getMergeList(path string) ([]Include, error) {
+	result := []Include{}
+	done := map[string]bool{}
+	for previous, next := "", path; next != "" && next != previous; next = nextCommonFile(next) {
+		allIncludes, innerDone, err := parseAllIncludes(next, done)
+		done = innerDone
+		if err != nil {
+			logErr.Println("Error loading includes for", next)
+			return result, err
+		}
+		result = append([]Include{Include{path: next}}, result...)
+		result = append(allIncludes, result...)
 		previous = next
 	}
 
-	return result
+	return result, nil
 }
 
-func printPaths(mergeList []string) {
+func printPaths(mergeList []Include) {
 	if len(mergeList) > 0 {
 		fmt.Println("# MERGED:")
 	}
-	for i := len(mergeList) - 1; i >= 0; i = i -1 {
-		if relativePath, err := filepath.Rel(workDir, mergeList[i]) ; err == nil && len(relativePath) < len(mergeList[i]) {
+	for i := 0; i < len(mergeList); i = i + 1 {
+		if relativePath, err := filepath.Rel(workDir, mergeList[i].path) ; err == nil && len(relativePath) < len(mergeList[i].path) {
 			fmt.Printf("# %s\n", relativePath)
 		} else {
-			fmt.Printf("# %s\n", mergeList[i])
+			fmt.Printf("# %s\n", mergeList[i].path)
 		}
 	}
 }
 
-func mergeVars(p string, version string) (map[string]interface{}, []string, error) {
+var regexInclude = regexp.MustCompile(`^[ \t]*#include[ \t]+("(.*?[^\\])"|([^ \t]+))[ \t]*$`)
+
+// Include represent the include file
+type Include struct {
+	path string
+	// options []Option
+}
+
+// ErrorIncludeLoop happens in case of an infinite loop between included files
+var ErrorIncludeLoop = errors.New("include loop")
+
+// ErrorIncludeOutOfChroot happens when an include is not in the inside the agnosticV repo.
+var ErrorIncludeOutOfChroot = errors.New("include path is out of chroot")
+
+// resolvePath return the absolute path, with context
+func resolvePath(root string, includePath string, contextFile string) (string, error) {
+	if includePath[0] == '/' {
+		return filepath.Join(root, filepath.Clean(includePath)), nil
+	}
+	result := filepath.Join(path.Dir(contextFile), filepath.Clean(includePath))
+
+	if !chrooted(root, result) {
+		return "", ErrorIncludeOutOfChroot
+	}
+	return result, nil
+}
+
+// parseInclude function parses the includes in a line
+func parseInclude(line string) (bool, Include) {
+	result := regexInclude.FindAllStringSubmatch(line, -1)
+
+	if len(result) == 0 {
+		return false, Include{}
+	}
+
+	if len(result) > 1 {
+		logErr.Println("Could not parse include line:", line)
+		return false, Include{}
+	}
+
+	if len(result[0]) < 4 {
+		logErr.Println("Could not parse include line:", line)
+		return false, Include{}
+	}
+
+	if result[0][2] == "" {
+		if result[0][3] == "" {
+			return false, Include{}
+		}
+		return true, Include{
+			path: result[0][3],
+		}
+	}
+
+	return true, Include{
+		path: result[0][2],
+	}
+}
+
+// parseAllIncludes parses all includes in a file
+func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]bool, error) {
+	logDebug.Println("parseAllIncludes(", path, done, ")")
+	if !fileExists(path) {
+		logErr.Println(path, "path does not exist")
+		return []Include{}, done, errors.New("path include does not exist")
+	}
+
+	if val, ok := done[path]; ok && val {
+		logErr.Println(path, "include loop detected")
+		return []Include{}, done, ErrorIncludeLoop}
+
+
+	done[path] = true
+
+	result := []Include{}
+
+	file, err := os.Open(path)
+	defer file.Close()
+	if err != nil {
+		return []Include{}, done, err
+	}
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if ok, include := parseInclude(line); ok {
+			logDebug.Println("parseInclude(", line, ")")
+			include.path, err = resolvePath(rootFlag, include.path, path)
+			if err != nil {
+				return []Include{}, done, err
+			}
+			innerIncludes, innerDone, err := parseAllIncludes(include.path, done)
+			done = innerDone
+
+			if err != nil {
+				return []Include{}, done, err
+			}
+
+			innerIncludes = append(innerIncludes, include)
+			result = append(innerIncludes, result...)
+		}
+	}
+	return result, done, nil
+}
+
+func mergeVars(p string, version string) (map[string]interface{}, []Include, error) {
 	// Work with Absolute paths
 	if ! filepath.IsAbs(p) {
 		if abs, errAbs := filepath.Abs(p); errAbs == nil {
 			p = abs
 		} else {
-			return map[string]interface{}{}, []string{}, errAbs
+			return map[string]interface{}{}, []Include{}, errAbs
 		}
 	}
 
-	mergeList := getMergeList(p)
+	if rootFlag == "" {
+		rootFlag = findRoot(p)
+	}
+
+	mergeList, err := getMergeList(p)
+	if err != nil {
+		return map[string]interface{}{}, []Include{}, err
+	}
+
 	logDebug.Printf("%+v\n", mergeList)
 
 	final := make(map[string]interface{})
 	meta := make(map[string]interface{})
 
-	for i := len(mergeList) - 1; i >= 0; i = i -1 {
+	for i := 0 ; i < len(mergeList); i = i + 1 {
 		current := make(map[string]interface{})
 
 		logDebug.Println("reading", mergeList[i])
-		content, err := ioutil.ReadFile(mergeList[i])
+		content, err := ioutil.ReadFile(mergeList[i].path)
 		if err != nil {
-			return map[string]interface{}{}, []string{}, err
+			return map[string]interface{}{}, []Include{}, err
 		}
 
 		switch version {
@@ -437,8 +559,8 @@ func mergeVars(p string, version string) (map[string]interface{}, []string, erro
 			logErr.Println("cannot unmarshal data when merging",
 				p,
 				". Error is in",
-				mergeList[i])
-			return map[string]interface{}{}, []string{}, err
+				mergeList[i].path)
+			return map[string]interface{}{}, []Include{}, err
 		}
 
 		for k,v := range current {
@@ -453,7 +575,7 @@ func mergeVars(p string, version string) (map[string]interface{}, []string, erro
 			mergo.WithAppendSlice,
 		); err != nil {
 			logErr.Println("Error in mergo.Merge() when merging", p)
-			return map[string]interface{}{}, []string{}, err
+			return map[string]interface{}{}, []Include{}, err
 		}
 		logDebug.Println("len(meta)", len(meta))
 		logDebug.Println("len(final)", len(final))
@@ -483,6 +605,10 @@ func main() {
 	}
 
 	if listFlag {
+		// always determine the chroot
+		if rootFlag == "" {
+			rootFlag = findRoot(workDir)
+		}
 		catalogItems, err := findCatalogItems(workDir, hasFlags)
 
 		if err != nil {
@@ -495,8 +621,7 @@ func main() {
 	}
 
 	if mergeFlag != "" {
-
-		// For merge, always determine the chroot
+		// always determine the chroot
 		if rootFlag == "" {
 			rootFlag = findRoot(mergeFlag)
 		}
