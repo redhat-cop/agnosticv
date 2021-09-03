@@ -144,7 +144,7 @@ func isPathCatalogItem(root, p string) bool {
 	return true
 }
 
-var regexNotCatalogItem = regexp.MustCompile(`^#[ \t]*agnosticv_catalog_item[ \t]*=[ \t]*false[ \t]*$`)
+var regexNotCatalogItem = regexp.MustCompile(`^#[ \t]*agnosticv catalog_item false[ \t]*$`)
 
 // isCatalogItem checks if a path is a valid catalog item.
 // root is the root directory of the local agnosticV repo.
