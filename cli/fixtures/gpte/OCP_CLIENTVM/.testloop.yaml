@@ -1,5 +1,5 @@
 ---
-#include notcatalogitem.yaml
+#include ../../includes/loop1.yaml
 cloudformation_retries: 0
 clientvm_instance_type: t2.medium
 

@@ -1,0 +1,7 @@
+---
+#agnosticv catalog_item false
+#include ../../includes/include1.yaml
+#include /cli/fixtures/includes/test1.yaml
+key: value
+key2: value2
+from_include: notcatalogitem

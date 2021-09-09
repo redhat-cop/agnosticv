@@ -1,0 +1,4 @@
+---
+#include loop2.yaml
+
+from_loop1: value

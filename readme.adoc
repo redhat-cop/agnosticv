@@ -116,7 +116,87 @@ The "leaf" files, or items, are just all the rest of the yaml files, having one 
 - yml
 - yaml
 
-All files starting with `.`, dotfiles, are ignored.
+You can list all catalog items in a directory by using the `--list` parameter.
+
+=== Files ignored ===
+
+* Any dotfile is ignored. Ex: `.git`
+* Any directory `includes` is ignored. The files in those directory are not considered as catalog items.
+* Any file containing:
++
+----
+#agnosticv catalog_item false
+----
++
+is ignored.
+
+=== `#include` merge feature ===
+
+* syntax:  `#include FILENAME`
+* identation is ignored
++
+[source,yaml]
+----
+#include /file.yaml
+----
++
+And:
++
+[source,yaml]
+----
+    #include /file.yaml
+----
++
+are the same.
+* `FILENAME` is added to the merge list right **before** current file regardless of the position of `#include` in the file. In other words, current file vars take precedence over merged files.
+* if `FILENAME` starts with `/` then path is absolute (to the AgnosticV repo)
+** if not, path is relative to current file
+
+[source,yaml]
+.`gpte/OCP4_WORKSHOP/prod.yaml`
+----
+#include /includes/file1.yaml
+#include /includes/file2.yaml
+
+cloud_provider: ec2
+key_name: opentlc_admin_backdoor
+repo_method: file
+
+subdomain_base_suffix: .example.opentlc.com
+HostedZoneId: Z3IHLWJZOU9SRT
+
+agnosticv_meta:
+  deploy_with: babylon
+----
+
+[source,yaml]
+.`includes/file1.yaml` with vars at the "agnosticd" level
+----
+var1: value1
+var2: value2
+----
+
+[source,yaml]
+.`includes/file2.yaml` with meta vars
+----
+agnosticv_meta:
+  secrets:
+    - somesecret
+
+__meta__:
+  secrets:
+    - name: somesecret
+      namespace: gpte
+----
+
+The merge list will be:
+
+. `/common.yaml`
+. `/gpte/account.yaml`
+. `/gpte/OCP4_WORKSHOP/common.yaml`
+. `/includes/file1.yaml`
+. `/includes/file2.yaml`
+. `/gpte/OCP4_WORKSHOP/prod.yaml`
 
 == Merging strategies
 
