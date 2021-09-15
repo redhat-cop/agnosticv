@@ -301,8 +301,12 @@ func findRoot(item string) string {
 
 	fileinfo, err := os.Stat(item)
 
-	if os.IsNotExist(err) {
-		log.Fatal(item, "File does not exist.")
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Fatal(item, "File does not exist.")
+		}
+
+		log.Fatal(item, err.Error())
 	}
 
 	// If it's a dir, run with current directory

@@ -34,6 +34,12 @@ Number of parallel builds: 7
 -->    netbsd/amd64: github.com/redhat-cop/agnosticv/cli
 ----
 
+For Mach ARM:
+
+----
+env GOOS=darwin GOARCH=arm64 go build  -o agnosticv_darwin_arm64
+----
+
 Then attach the binaries to the release in github.
 
 == Tests ==
