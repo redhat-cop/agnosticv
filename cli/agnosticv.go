@@ -256,12 +256,9 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 
 					if containsPath(mergeList, orRelatedAbs) {
 						// Add catalog item to result
-						logDebug.Println(orRelatedAbs, "found")
 						result = append(result, p)
 						return nil
 					}
-					logDebug.Println(orRelatedAbs, "not found in ", mergeList)
-
 				}
 			}
 
