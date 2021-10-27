@@ -241,11 +241,49 @@ func TestWalk(t *testing.T) {
 	testCases := []struct {
 		description string
 		hasFlags []string
+		relatedFlags []string
+		orRelatedFlags []string
 		count int
 	}{
 		{
 			description: "No JMES filtering",
 			hasFlags: []string{},
+			count: 11,
+		},
+		{
+			description: "Related includes/include1.yaml",
+			hasFlags: []string{},
+			relatedFlags: []string{"fixtures/includes/include1.yaml"},
+			count: 2,
+		},
+		{
+			description: "Related to fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
+			hasFlags: []string{},
+			relatedFlags: []string{"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml"},
+			count: 3,
+		},
+		{
+			description: "Related to fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml and test.yaml",
+			hasFlags: []string{},
+			relatedFlags: []string{
+				"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
+				"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
+			},
+			count: 1,
+		},
+		{
+			description: "Related to fixtures/gpte/OCP_CLIENTVM/description.adoc",
+			hasFlags: []string{},
+			relatedFlags: []string{
+				"fixtures/gpte/OCP_CLIENTVM/description.adoc",
+			},
+			count: 2,
+		},
+		{
+			description: "Related (inclusive, --or-related) to /common.yaml",
+			hasFlags: []string{},
+			relatedFlags: []string{"fixtures/includes/include1.yaml"},
+			orRelatedFlags: []string{"fixtures/common.yaml"},
 			count: 11,
 		},
 		{
@@ -274,7 +312,7 @@ func TestWalk(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		result, err := findCatalogItems(".", tc.hasFlags)
+		result, err := findCatalogItems(".", tc.hasFlags, tc.relatedFlags, tc.orRelatedFlags)
 		if err != nil {
 			t.Error()
 		}
