@@ -272,6 +272,14 @@ func TestWalk(t *testing.T) {
 			count: 1,
 		},
 		{
+			description: "Related to fixtures/gpte/OCP_CLIENTVM/description.adoc",
+			hasFlags: []string{},
+			relatedFlags: []string{
+				"fixtures/gpte/OCP_CLIENTVM/description.adoc",
+			},
+			count: 2,
+		},
+		{
 			description: "Related (inclusive, --or-related) to /common.yaml",
 			hasFlags: []string{},
 			relatedFlags: []string{"fixtures/includes/include1.yaml"},

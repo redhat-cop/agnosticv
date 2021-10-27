@@ -52,8 +52,9 @@ func parseFlags() {
 	flag.BoolVar(&listFlag, "list", false, "List all the catalog items present in current directory.")
 	flag.Var(&relatedFlags, "related", `Use with --list only. Filter output and display only related catalog items.
 A catalog item is related to FILE if:
-- it includes FILE because FILE is a common file
+- it includes FILE as a common file
 - it includes FILE via #include
+- FILE is description.adoc or description.html
 
 Example:
 --list --related dir/common.yaml --related includes/foo.yaml
@@ -238,7 +239,16 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 
 		if len(relatedFlags) > 0 || len(orRelatedFlags) > 0 {
 			mergeList, err := getMergeList(pAbs)
+
+			// Related == merge list + description.{adoc,html}
+			related := append(
+				mergeList,
+				Include{path: filepath.Join(filepath.Dir(pAbs),"description.adoc")},
+				Include{path: filepath.Join(filepath.Dir(pAbs),"description.html")},
+			)
+
 			logDebug.Println("getMergeList(", pAbs, ") =", mergeList)
+			logDebug.Println("related =", related)
 			if err != nil {
 				logErr.Printf("%v\n", err)
 				return nil
@@ -254,7 +264,7 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 						return nil
 					}
 
-					if containsPath(mergeList, orRelatedAbs) {
+					if containsPath(related, orRelatedAbs) {
 						// Add catalog item to result
 						result = append(result, p)
 						return nil
@@ -272,7 +282,7 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 						return nil
 					}
 
-					if !containsPath(mergeList, relatedAbs) {
+					if !containsPath(related, relatedAbs) {
 						// If not related, do not select catalog item
 						return nil
 					}
