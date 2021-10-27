@@ -27,6 +27,8 @@ var logReport *log.Logger
 // Flags
 type arrayFlags []string
 var listFlag bool
+var relatedFlags arrayFlags
+var orRelatedFlags arrayFlags
 var hasFlags arrayFlags
 var mergeFlag string
 var debugFlag bool
@@ -48,8 +50,25 @@ var workDir string
 
 func parseFlags() {
 	flag.BoolVar(&listFlag, "list", false, "List all the catalog items present in current directory.")
+	flag.Var(&relatedFlags, "related", `Use with --list only. Filter output and display only related catalog items.
+A catalog item is related to FILE if:
+- it includes FILE because FILE is a common file
+- it includes FILE via #include
+
+Example:
+--list --related dir/common.yaml --related includes/foo.yaml
+   List all catalog items under dir/ that also include includes/foo.yaml
+
+Can be used several times (act like AND).`)
+	flag.Var(&orRelatedFlags, "or-related", `Use with --list only. Same as --related except it appends the related files to the list instead of reducing it.
+
+Example:
+--list --related dir/common.yaml --or-related includes/foo.yaml
+   List all catalog items under dir/ and also all catalog items that include includes/foo.yaml
+
+Can be used several times (act like OR).`)
 	flag.Var(&hasFlags, "has", `Use with --list only. Filter catalog items using a JMESPath expression.
-Can be used several time (act like AND).
+Can be used several times (act like AND).
 
 Examples:
 --has __meta__.catalog
@@ -65,6 +84,16 @@ need this parameter unless your files are not in a git repository, or if you wan
 	flag.Parse()
 
 	if len(hasFlags) > 0 && listFlag == false {
+		flag.PrintDefaults()
+		os.Exit(2)
+	}
+
+	if len(relatedFlags) > 0 && listFlag == false {
+		flag.PrintDefaults()
+		os.Exit(2)
+	}
+
+	if len(orRelatedFlags) > 0 && listFlag == false {
 		flag.PrintDefaults()
 		os.Exit(2)
 	}
@@ -179,7 +208,7 @@ func isCatalogItem(root, p string) bool {
 	return true
 }
 
-func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
+func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, orRelatedFlags []string) ([]string, error) {
 	logDebug.Println("findCatalogItems(", workdir, hasFlags, ")")
 	result := []string{}
 	os.Chdir(workdir)
@@ -197,13 +226,62 @@ func findCatalogItems(workdir string, hasFlags []string) ([]string, error) {
 			return nil
 		}
 
-		if pAbs, err := filepath.Abs(p) ; err == nil {
+		pAbs, err := filepath.Abs(p)
+		if err == nil {
 			if !isCatalogItem(rootFlag, pAbs) {
 				return nil
 			}
 		} else {
 			logErr.Printf("%v\n", err)
 			return nil
+		}
+
+		if len(relatedFlags) > 0 || len(orRelatedFlags) > 0 {
+			mergeList, err := getMergeList(pAbs)
+			logDebug.Println("getMergeList(", pAbs, ") =", mergeList)
+			if err != nil {
+				logErr.Printf("%v\n", err)
+				return nil
+			}
+
+			// related files, inclusive version
+			if len(orRelatedFlags) > 0 {
+				for _, orRelatedFlag := range orRelatedFlags {
+
+					orRelatedAbs, err := filepath.Abs(orRelatedFlag)
+					if err != nil {
+						logErr.Printf("%v\n", err)
+						return nil
+					}
+
+					if containsPath(mergeList, orRelatedAbs) {
+						// Add catalog item to result
+						logDebug.Println(orRelatedAbs, "found")
+						result = append(result, p)
+						return nil
+					}
+					logDebug.Println(orRelatedAbs, "not found in ", mergeList)
+
+				}
+			}
+
+			// related files, exclusive version
+			if len(relatedFlags) > 0 {
+				for _, relatedFlag := range relatedFlags {
+
+					relatedAbs, err := filepath.Abs(relatedFlag)
+					if err != nil {
+						logErr.Printf("%v\n", err)
+						return nil
+					}
+
+					if !containsPath(mergeList, relatedAbs) {
+						// If not related, do not select catalog item
+						return nil
+					}
+
+				}
+			}
 		}
 
 		if len(hasFlags) > 0 {
@@ -378,6 +456,15 @@ func nextCommonFile(position string) string {
 
 }
 
+func containsPath(l []Include, p string) bool {
+    for _, a := range l {
+        if a.path == p {
+            return true
+        }
+    }
+    return false
+}
+
 // function getMergeList return the merge list for a catalog items
 // merge list contains: common files and includes.
 func getMergeList(path string) ([]Include, error) {
@@ -480,8 +567,8 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 
 	if val, ok := done[path]; ok && val {
 		logErr.Println(path, "include loop detected")
-		return []Include{}, done, ErrorIncludeLoop}
-
+		return []Include{}, done, ErrorIncludeLoop
+	}
 
 	done[path] = true
 
@@ -613,7 +700,7 @@ func main() {
 		if rootFlag == "" {
 			rootFlag = findRoot(workDir)
 		}
-		catalogItems, err := findCatalogItems(workDir, hasFlags)
+		catalogItems, err := findCatalogItems(workDir, hasFlags, relatedFlags, orRelatedFlags)
 
 		if err != nil {
 			logErr.Printf("error walking the path %q: %v\n", ".", err)
