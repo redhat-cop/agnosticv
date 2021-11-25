@@ -287,6 +287,13 @@ func TestWalk(t *testing.T) {
 			count: 11,
 		},
 		{
+			description: "Related (exclusive + inclusive) to /common.yaml and --has flag",
+			hasFlags: []string{"foodict"},
+			relatedFlags: []string{"fixtures/includes/include1.yaml"},
+			orRelatedFlags: []string{"fixtures/common.yaml"},
+			count: 1,
+		},
+		{
 			description: "key foodict is present",
 			hasFlags: []string{"foodict"},
 			count: 1,
