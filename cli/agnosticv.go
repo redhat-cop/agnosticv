@@ -33,6 +33,7 @@ var hasFlags arrayFlags
 var mergeFlag string
 var debugFlag bool
 var rootFlag string
+var validateFlag bool
 
 // Methods to be able to use the flag multiple times
 func (i *arrayFlags) String() string {
@@ -50,6 +51,7 @@ var workDir string
 
 func parseFlags() {
 	flag.BoolVar(&listFlag, "list", false, "List all the catalog items present in current directory.")
+	flag.BoolVar(&validateFlag, "validate", true, "Validate variables against schemas present in .schemas directory.")
 	flag.Var(&relatedFlags, "related", `Use with --list only. Filter output and display only related catalog items.
 A catalog item is related to FILE if:
 - it includes FILE as a common file
@@ -687,6 +689,12 @@ func mergeVars(p string, version string) (map[string]interface{}, []Include, err
 		final["agnosticv_meta"] = val
 	}
 
+	if validateFlag {
+		if err := validateAgainstSchemas(p, final); err != nil {
+			return final, mergeList, err
+		}
+		logDebug.Println("schemas all validated")
+	}
 	return final, mergeList, nil
 }
 
@@ -701,12 +709,18 @@ func main() {
 	} else {
 		logErr.Fatal(errWorkDir)
 	}
+	// always determine the chroot
+	if rootFlag == "" {
+		rootFlag = findRoot(workDir)
+	}
+
+	err := initSchemaList()
+	if err != nil {
+		logErr.Printf("error listing schemas: %v\n", err)
+		return
+	}
 
 	if listFlag {
-		// always determine the chroot
-		if rootFlag == "" {
-			rootFlag = findRoot(workDir)
-		}
 		catalogItems, err := findCatalogItems(workDir, hasFlags, relatedFlags, orRelatedFlags)
 
 		if err != nil {
@@ -719,11 +733,6 @@ func main() {
 	}
 
 	if mergeFlag != "" {
-		// always determine the chroot
-		if rootFlag == "" {
-			rootFlag = findRoot(mergeFlag)
-		}
-
 		merged, mergeList, err := mergeVars(mergeFlag, "v2")
 		if err != nil {
 			logErr.Fatal(err)
