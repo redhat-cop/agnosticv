@@ -14,7 +14,8 @@ import (
 	"regexp"
 	"errors"
 	"bufio"
-	yaml "gopkg.in/yaml.v2"
+	//yaml "gopkg.in/yaml.v2"
+	"github.com/ghodss/yaml"
 	yaml3 "gopkg.in/yaml.v3"
 )
 

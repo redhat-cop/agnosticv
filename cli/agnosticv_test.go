@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -424,4 +425,30 @@ func TestInclude(t *testing.T) {
 	}
 
 
+}
+
+func TestSchemaValidationPatternFailed(t *testing.T) {
+	rootFlag = "fixtures"
+	validateFlag = true
+	initSchemaList()
+
+	_, _, err := mergeVars("fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml", "v2")
+	if err == nil {
+		t.Error("Error expected")
+	}
+
+	if !strings.HasPrefix(err.Error(), "Error at \"/__meta__/lifespan/default\": string doesn't match the regular expression") {
+		t.Error("ErrorSchema not found", err)
+	}
+}
+
+func TestSchemaValidationOK(t *testing.T) {
+	rootFlag = "fixtures"
+	validateFlag = true
+	initSchemaList()
+
+	_, _, err := mergeVars("fixtures/test/BABYLON_EMPTY_CONFIG/prod.yaml", "v2")
+	if err != nil {
+		t.Error("Error", err)
+	}
 }

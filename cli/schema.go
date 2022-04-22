@@ -45,7 +45,6 @@ func getSchemaList() ([]Schema, error) {
 			logErr.Printf("%q: %v\n", p, err)
 			return err
 		}
-
 		// Work only with YAML files
 		if !strings.HasSuffix(p, ".yml") && !strings.HasSuffix(p, ".yaml") {
 			return nil
