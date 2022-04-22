@@ -9,6 +9,12 @@ Currently the project is composed of:
 . link:cli[CLI] `agnosticv`, a generic implementation.
 . link:https://github.com/redhat-gpte-devopsautomation/agnosticv-operator[agnosticv-operator] an OpenShift operator that uses the CLI and generates OpenShift Custom Resources for link:https://github.com/redhat-cop/babylon[Babylon] based on the content of the agnosticv repositories. The operator is more opinionated than the CLI as it expects a specific file structure in the agnosticV repository. It is used in our GPTE organization to manage our catalogs.
 
+=== Features ===
+
+- Merge YAML files automatically following a particular convention, see below.
+- Support for includes.
+- Support for link:https://www.openapis.org/[OpenAPI v3] schema to validate the data. Just place schemas in a `.schemas` directory at the top-level of the agnosticv repository.
+
 === Example of agnosticv repositories
 
 . public: see in link:cli/fixtures[cli/fixtures] for an example of structure of a catalog
@@ -33,26 +39,48 @@ The CLI `agnosticv` has the following capabilities:
 
 .Usage
 ----
-Usage of ./agnosticv:
+Usage of agnosticv_dev:
   -debug
-        Debug mode
+    	Debug mode
   -has value
-        Use with --list only. Filter catalog items using a JMESPath expression.
-        Can be used several time (act like AND).
+    	Use with --list only. Filter catalog items using a JMESPath expression.
+    	Can be used several times (act like AND).
 
-        Examples:
-        --has __meta__.catalog
-        --has "env_type == 'ocp-clientvm'"
-        --has "to_string(worker_instance_count) == '2'"
+    	Examples:
+    	--has __meta__.catalog
+    	--has "env_type == 'ocp-clientvm'"
+    	--has "to_string(worker_instance_count) == '2'"
 
   -list
-        List all the catalog items present in current directory.
+    	List all the catalog items present in current directory.
   -merge string
-        Merge and print variables of a catalog item.
+    	Merge and print variables of a catalog item.
+  -or-related value
+    	Use with --list only. Same as --related except it appends the related files to the list instead of reducing it.
+
+    	Example:
+    	--list --related dir/common.yaml --or-related includes/foo.yaml
+    	   List all catalog items under dir/ and also all catalog items that include includes/foo.yaml
+
+    	Can be used several times (act like OR).
+  -related value
+    	Use with --list only. Filter output and display only related catalog items.
+    	A catalog item is related to FILE if:
+    	- it includes FILE as a common file
+    	- it includes FILE via #include
+    	- FILE is description.adoc or description.html
+
+    	Example:
+    	--list --related dir/common.yaml --related includes/foo.yaml
+    	   List all catalog items under dir/ that also include includes/foo.yaml
+
+    	Can be used several times (act like AND).
   -root string
-        The top directory of the agnosticv files. Files outside of this directory will not be merged.
-        By default, it's empty, and the scope of the git repository is used, so you should not
-        need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.
+    	The top directory of the agnosticv files. Files outside of this directory will not be merged.
+    	By default, it's empty, and the scope of the git repository is used, so you should not
+    	need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.
+  -validate
+    	Validate variables against schemas present in .schemas directory. (default true)
 ----
 
 .Using local directory
