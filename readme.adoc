@@ -39,7 +39,7 @@ The CLI `agnosticv` has the following capabilities:
 
 .Usage
 ----
-Usage of agnosticv_dev:
+Usage of agnosticv:
   -debug
     	Debug mode
   -has value

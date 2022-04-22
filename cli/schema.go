@@ -2,16 +2,13 @@ package main
 
 import (
 	"errors"
-	//"github.com/xeipuuv/gojsonschema"
+	"fmt"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/ghodss/yaml"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	"github.com/getkin/kin-openapi/openapi3"
-	//"github.com/go-openapi/spec"
-
-	// yaml "gopkg.in/yaml.v2"
 )
 
 // Schema type

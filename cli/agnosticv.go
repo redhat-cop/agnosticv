@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"flag"
 	"fmt"
+	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 	"github.com/jmespath/go-jmespath"
 	"io/ioutil"
@@ -10,12 +13,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"regexp"
-	"errors"
-	"bufio"
-	//yaml "gopkg.in/yaml.v2"
-	"github.com/ghodss/yaml"
+	"strings"
 	yaml3 "gopkg.in/yaml.v3"
 )
 
