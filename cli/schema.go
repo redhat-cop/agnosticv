@@ -2,19 +2,22 @@ package main
 
 import (
 	"errors"
-	"github.com/icza/dyno"
-	"github.com/xeipuuv/gojsonschema"
+	//"github.com/xeipuuv/gojsonschema"
+	"github.com/ghodss/yaml"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/getkin/kin-openapi/openapi3"
+	//"github.com/go-openapi/spec"
+
+	// yaml "gopkg.in/yaml.v2"
 )
 
 // Schema type
 type Schema struct {
 	path string
-	schema *gojsonschema.Schema
+	schema *openapi3.Schema
 }
 
 var schemas []Schema
@@ -35,8 +38,6 @@ func getSchemaList() ([]Schema, error) {
 		return []Schema{}, nil
 	}
 
-	//os.Chdir(schemaDir)
-
 	result := []Schema{}
 
 	err := filepath.Walk(schemaDir, func(p string, info os.FileInfo, err error) error {
@@ -50,6 +51,8 @@ func getSchemaList() ([]Schema, error) {
 			return nil
 		}
 
+		// 1. Read content of schema in YAML
+
 		pAbs, err := filepath.Abs(p)
 
 		content, err := ioutil.ReadFile(pAbs)
@@ -57,19 +60,11 @@ func getSchemaList() ([]Schema, error) {
 			return err
 		}
 
-		logDebug.Println("len(content)", len(content))
+		// 2. convert to object
 
-		schemaObject := make(map[string]interface{})
+		schema := openapi3.NewSchema()
 
-		err = yaml.Unmarshal([]byte(content), &schemaObject)
-
-		if err != nil {
-			return err
-		}
-
-		loader := gojsonschema.NewGoLoader(dyno.ConvertMapI2MapS(schemaObject))
-		schema, err := gojsonschema.NewSchema(loader)
-		if err != nil {
+		if err := yaml.Unmarshal(content, schema); err != nil {
 			return err
 		}
 
@@ -88,24 +83,13 @@ func getSchemaList() ([]Schema, error) {
 var ErrorSchema = errors.New("schema not passed")
 
 func validateAgainstSchemas(path string, data map[string]interface{}) error {
-	document := gojsonschema.NewGoLoader(dyno.ConvertMapI2MapS(data))
-
+	logDebug.Println("len(schemas) =", len(schemas))
 	for _, schema := range schemas {
 		logDebug.Println("Validating", path, "against", schema.path)
-		result, err := schema.schema.Validate(document)
+		err := schema.schema.VisitJSON(data)
 		if err != nil {
-			panic(err.Error())
+			return err
 		}
-
-		if result.Valid() {
-			continue
-		}
-
-		logErr.Printf("%s does not validate against schema %s", path, schema.path)
-		for _, desc := range result.Errors() {
-			logErr.Printf("- %s\n", desc)
-		}
-		return ErrorSchema
 	}
 	return nil
 }
