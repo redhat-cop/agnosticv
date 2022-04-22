@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	yaml3 "gopkg.in/yaml.v3"
 )
 
 // Logs
@@ -242,7 +241,7 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 		if len(hasFlags) > 0 {
 			logDebug.Println("hasFlags", hasFlags)
 			// Here we need yaml.v3 in order to use jmespath
-			merged, _, err := mergeVars(p, "v3")
+			merged, _, err := mergeVars(p)
 			if err != nil {
 				// Print the error and move to next file
 				logErr.Println(err)
@@ -614,7 +613,7 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 	return result, done, nil
 }
 
-func mergeVars(p string, version string) (map[string]interface{}, []Include, error) {
+func mergeVars(p string) (map[string]interface{}, []Include, error) {
 	// Work with Absolute paths
 	if ! filepath.IsAbs(p) {
 		if abs, errAbs := filepath.Abs(p); errAbs == nil {
@@ -647,12 +646,7 @@ func mergeVars(p string, version string) (map[string]interface{}, []Include, err
 			return map[string]interface{}{}, []Include{}, err
 		}
 
-		switch version {
-		case "v2":
-			err = yaml.Unmarshal(content, &current)
-		case "v3":
-			err = yaml3.Unmarshal(content, &current)
-		}
+		err = yaml.Unmarshal(content, &current)
 		logDebug.Println("len(current)", len(current))
 
 		if err != nil {
@@ -733,7 +727,7 @@ func main() {
 	}
 
 	if mergeFlag != "" {
-		merged, mergeList, err := mergeVars(mergeFlag, "v2")
+		merged, mergeList, err := mergeVars(mergeFlag)
 		if err != nil {
 			logErr.Fatal(err)
 		}

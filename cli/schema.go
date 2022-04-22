@@ -84,6 +84,7 @@ func validateAgainstSchemas(path string, data map[string]interface{}) error {
 		logDebug.Println("Validating", path, "against", schema.path)
 		err := schema.schema.VisitJSON(data)
 		if err != nil {
+			err = fmt.Errorf("%s - %w", path, err)
 			return err
 		}
 	}
