@@ -437,7 +437,7 @@ func TestSchemaValidationPatternFailed(t *testing.T) {
 	if err != nil {
 		t.Error("Error not expected")
 	}
-    errValidation := validateAgainstSchemas(path, merged)
+	errValidation := validateAgainstSchemas(path, merged)
 
 	if !strings.Contains(errValidation.Error(), "Error at \"/__meta__/lifespan/default\": string doesn't match the regular expression") {
 		t.Error("ErrorSchema not found", errValidation)
@@ -454,7 +454,7 @@ func TestSchemaValidationOK(t *testing.T) {
 	if errMerge != nil {
 		t.Error("Error not expected")
 	}
-    err := validateAgainstSchemas(path, merged)
+	err := validateAgainstSchemas(path, merged)
 
 	if err != nil {
 		t.Error("Error", err)
