@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/ghodss/yaml"
 	"github.com/imdario/mergo"
 	"github.com/jmespath/go-jmespath"
 	"io/ioutil"
@@ -15,6 +14,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	yaml "gopkg.in/yaml.v2"
+	yamljson "github.com/ghodss/yaml"
 )
 
 // Logs
@@ -241,7 +242,7 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 		if len(hasFlags) > 0 {
 			logDebug.Println("hasFlags", hasFlags)
 			// Here we need yaml.v3 in order to use jmespath
-			merged, _, err := mergeVars(p)
+			merged, _, err := mergeVars(p, "json")
 			if err != nil {
 				// Print the error and move to next file
 				logErr.Println(err)
@@ -613,7 +614,7 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 	return result, done, nil
 }
 
-func mergeVars(p string) (map[string]interface{}, []Include, error) {
+func mergeVars(p string, version string) (map[string]interface{}, []Include, error) {
 	// Work with Absolute paths
 	if ! filepath.IsAbs(p) {
 		if abs, errAbs := filepath.Abs(p); errAbs == nil {
@@ -646,8 +647,12 @@ func mergeVars(p string) (map[string]interface{}, []Include, error) {
 			return map[string]interface{}{}, []Include{}, err
 		}
 
-		err = yaml.Unmarshal(content, &current)
-		logDebug.Println("len(current)", len(current))
+		switch version {
+		case "v2":
+			err = yaml.Unmarshal(content, &current)
+		case "json":
+			err = yamljson.Unmarshal(content, &current)
+		}
 
 		if err != nil {
 			logErr.Println("cannot unmarshal data when merging",
@@ -683,12 +688,6 @@ func mergeVars(p string) (map[string]interface{}, []Include, error) {
 		final["agnosticv_meta"] = val
 	}
 
-	if validateFlag {
-		if err := validateAgainstSchemas(p, final); err != nil {
-			return final, mergeList, err
-		}
-		logDebug.Println("schemas all validated")
-	}
 	return final, mergeList, nil
 }
 
@@ -727,10 +726,21 @@ func main() {
 	}
 
 	if mergeFlag != "" {
-		merged, mergeList, err := mergeVars(mergeFlag)
+		if validateFlag {
+			merged, _, err := mergeVars(mergeFlag, "json")
+			if err != nil {
+				logErr.Fatal(err)
+			}
+			if err := validateAgainstSchemas(mergeFlag, merged); err != nil {
+				logErr.Fatal(err)
+			}
+		}
+
+		merged, mergeList, err := mergeVars(mergeFlag, "v2")
 		if err != nil {
 			logErr.Fatal(err)
 		}
+
 		out, _:= yaml.Marshal(merged)
 
 		fmt.Printf("---\n")

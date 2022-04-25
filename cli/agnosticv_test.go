@@ -401,7 +401,7 @@ func TestParseInclude(t *testing.T) {
 
 func TestInclude(t *testing.T) {
 
-	merged, _, err := mergeVars("fixtures/gpte/OCP_CLIENTVM/dev.yaml")
+	merged, _, err := mergeVars("fixtures/gpte/OCP_CLIENTVM/dev.yaml", "v2")
 	if err != nil {
 		t.Error(err)
 	}
@@ -418,7 +418,7 @@ func TestInclude(t *testing.T) {
 		t.Error("value 'from_include1' not found")
 	}
 
-	merged, _, err = mergeVars("fixtures/gpte/OCP_CLIENTVM/.testloop.yaml")
+	merged, _, err = mergeVars("fixtures/gpte/OCP_CLIENTVM/.testloop.yaml", "v2")
 
 	if err != ErrorIncludeLoop {
 		t.Error("ErrorIncludeLoop expected, got", err)
@@ -432,13 +432,15 @@ func TestSchemaValidationPatternFailed(t *testing.T) {
 	validateFlag = true
 	initSchemaList()
 
-	_, _, err := mergeVars("fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml")
-	if err == nil {
-		t.Error("Error expected")
+	path := "fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml"
+	merged, _, err := mergeVars(path, "json")
+	if err != nil {
+		t.Error("Error not expected")
 	}
+    errValidation := validateAgainstSchemas(path, merged)
 
-	if !strings.Contains(err.Error(), "Error at \"/__meta__/lifespan/default\": string doesn't match the regular expression") {
-		t.Error("ErrorSchema not found", err)
+	if !strings.Contains(errValidation.Error(), "Error at \"/__meta__/lifespan/default\": string doesn't match the regular expression") {
+		t.Error("ErrorSchema not found", errValidation)
 	}
 }
 
@@ -447,7 +449,13 @@ func TestSchemaValidationOK(t *testing.T) {
 	validateFlag = true
 	initSchemaList()
 
-	_, _, err := mergeVars("fixtures/test/BABYLON_EMPTY_CONFIG/prod.yaml")
+	path := "fixtures/test/BABYLON_EMPTY_CONFIG/prod.yaml"
+	merged, _, errMerge := mergeVars(path, "json")
+	if errMerge != nil {
+		t.Error("Error not expected")
+	}
+    err := validateAgainstSchemas(path, merged)
+
 	if err != nil {
 		t.Error("Error", err)
 	}
