@@ -13,7 +13,8 @@ Currently the project is composed of:
 
 - Merge YAML files automatically following a particular convention, see below.
 - Support for includes.
-- Support for link:https://www.openapis.org/[OpenAPI v3] schema to validate the data. Just place schemas in a `.schemas` directory at the top-level of the agnosticv repository.
+- Validate variables using  link:https://www.openapis.org/[OpenAPI v3] schemas. Just place schemas in a `.schemas` directory at the top-level of the agnosticv repository.
+- Filter catalog items using JMESPath expressions (`--has` flag)
 
 === Example of agnosticv repositories
 
