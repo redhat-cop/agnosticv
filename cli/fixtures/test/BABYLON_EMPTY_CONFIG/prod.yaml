@@ -16,3 +16,5 @@ agnosticv_meta:
 __meta__:
   deployer:
     scm_ref: test-empty-config-prod-0.5
+  lifespan:
+    default: 1d

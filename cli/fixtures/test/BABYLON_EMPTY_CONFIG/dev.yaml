@@ -32,6 +32,10 @@ __meta__:
   deployer:
     scm_ref: development
 
+  lifespan:
+    # Don't comply with the schema1.yaml, force error.
+    default: wrong
+
   catalog:
     namespace: gpte
 

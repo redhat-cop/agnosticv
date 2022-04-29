@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/imdario/mergo"
@@ -10,12 +12,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"regexp"
-	"errors"
-	"bufio"
+	"strings"
 	yaml "gopkg.in/yaml.v2"
-	yaml3 "gopkg.in/yaml.v3"
+	yamljson "github.com/ghodss/yaml"
 )
 
 // Logs
@@ -33,6 +33,7 @@ var hasFlags arrayFlags
 var mergeFlag string
 var debugFlag bool
 var rootFlag string
+var validateFlag bool
 
 // Methods to be able to use the flag multiple times
 func (i *arrayFlags) String() string {
@@ -50,6 +51,7 @@ var workDir string
 
 func parseFlags() {
 	flag.BoolVar(&listFlag, "list", false, "List all the catalog items present in current directory.")
+	flag.BoolVar(&validateFlag, "validate", true, "Validate variables against schemas present in .schemas directory.")
 	flag.Var(&relatedFlags, "related", `Use with --list only. Filter output and display only related catalog items.
 A catalog item is related to FILE if:
 - it includes FILE as a common file
@@ -240,7 +242,7 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 		if len(hasFlags) > 0 {
 			logDebug.Println("hasFlags", hasFlags)
 			// Here we need yaml.v3 in order to use jmespath
-			merged, _, err := mergeVars(p, "v3")
+			merged, _, err := mergeVars(p, "json")
 			if err != nil {
 				// Print the error and move to next file
 				logErr.Println(err)
@@ -648,10 +650,9 @@ func mergeVars(p string, version string) (map[string]interface{}, []Include, err
 		switch version {
 		case "v2":
 			err = yaml.Unmarshal(content, &current)
-		case "v3":
-			err = yaml3.Unmarshal(content, &current)
+		case "json":
+			err = yamljson.Unmarshal(content, &current)
 		}
-		logDebug.Println("len(current)", len(current))
 
 		if err != nil {
 			logErr.Println("cannot unmarshal data when merging",
@@ -701,12 +702,18 @@ func main() {
 	} else {
 		logErr.Fatal(errWorkDir)
 	}
+	// always determine the chroot
+	if rootFlag == "" {
+		rootFlag = findRoot(workDir)
+	}
+
+	err := initSchemaList()
+	if err != nil {
+		logErr.Printf("error listing schemas: %v\n", err)
+		return
+	}
 
 	if listFlag {
-		// always determine the chroot
-		if rootFlag == "" {
-			rootFlag = findRoot(workDir)
-		}
 		catalogItems, err := findCatalogItems(workDir, hasFlags, relatedFlags, orRelatedFlags)
 
 		if err != nil {
@@ -719,15 +726,21 @@ func main() {
 	}
 
 	if mergeFlag != "" {
-		// always determine the chroot
-		if rootFlag == "" {
-			rootFlag = findRoot(mergeFlag)
+		if validateFlag {
+			merged, _, err := mergeVars(mergeFlag, "json")
+			if err != nil {
+				logErr.Fatal(err)
+			}
+			if err := validateAgainstSchemas(mergeFlag, merged); err != nil {
+				logErr.Fatal(err)
+			}
 		}
 
 		merged, mergeList, err := mergeVars(mergeFlag, "v2")
 		if err != nil {
 			logErr.Fatal(err)
 		}
+
 		out, _:= yaml.Marshal(merged)
 
 		fmt.Printf("---\n")
