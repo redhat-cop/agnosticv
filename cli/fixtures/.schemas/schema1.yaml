@@ -1,5 +1,10 @@
 ---
 type: object
+x-merge:
+  - path: /alist
+    strategy: merge
+  - path: /adict/alist
+    strategy: merge
 properties:
   purpose:
     type: string

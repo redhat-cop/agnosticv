@@ -3,6 +3,13 @@ purpose: development
 
 pause_destroy: true
 pause_post_software: true
+adict:
+  alist:
+    - fromdev
+  blist:
+    - fromdev
+alist:
+  - fromdev
 
 #########################################
 # Meta variables for admin host scripts #
@@ -44,3 +51,8 @@ __meta__:
 
     tags:
       - babylon
+
+  secrets:
+    - name: a
+      value: fromdev
+    - name: b

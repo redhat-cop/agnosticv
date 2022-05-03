@@ -401,9 +401,9 @@ func TestParseInclude(t *testing.T) {
 
 func TestInclude(t *testing.T) {
 
-	merged, _, err := mergeVars("fixtures/gpte/OCP_CLIENTVM/dev.yaml", "v2")
+	merged, _, err := mergeVars("fixtures/gpte/OCP_CLIENTVM/dev.yaml", mergeStrategies)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	if val, ok := merged["from_include"]; ok {
@@ -418,7 +418,7 @@ func TestInclude(t *testing.T) {
 		t.Error("value 'from_include1' not found")
 	}
 
-	merged, _, err = mergeVars("fixtures/gpte/OCP_CLIENTVM/.testloop.yaml", "v2")
+	merged, _, err = mergeVars("fixtures/gpte/OCP_CLIENTVM/.testloop.yaml", mergeStrategies)
 
 	if err != ErrorIncludeLoop {
 		t.Error("ErrorIncludeLoop expected, got", err)
@@ -428,12 +428,12 @@ func TestInclude(t *testing.T) {
 }
 
 func TestSchemaValidationPatternFailed(t *testing.T) {
-	rootFlag = "fixtures"
+	rootFlag = abs("fixtures")
 	validateFlag = true
 	initSchemaList()
 
 	path := "fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml"
-	merged, _, err := mergeVars(path, "json")
+	merged, _, err := mergeVars(path, mergeStrategies)
 	if err != nil {
 		t.Error("Error not expected")
 	}
@@ -445,12 +445,12 @@ func TestSchemaValidationPatternFailed(t *testing.T) {
 }
 
 func TestSchemaValidationOK(t *testing.T) {
-	rootFlag = "fixtures"
+	rootFlag = abs("fixtures")
 	validateFlag = true
 	initSchemaList()
 
 	path := "fixtures/test/BABYLON_EMPTY_CONFIG/prod.yaml"
-	merged, _, errMerge := mergeVars(path, "json")
+	merged, _, errMerge := mergeVars(path, mergeStrategies)
 	if errMerge != nil {
 		t.Error("Error not expected")
 	}
@@ -458,5 +458,22 @@ func TestSchemaValidationOK(t *testing.T) {
 
 	if err != nil {
 		t.Error("Error", err)
+	}
+}
+
+
+func TestGetMergeList(t *testing.T) {
+	rootFlag = abs("fixtures")
+	validateFlag = true
+	initSchemaList()
+
+	l, err := getMergeList(abs("fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml"))
+	if err != nil {
+		t.Fatal("getMergeList failed")
+	}
+
+	if len(l) != 4 {
+		t.Log(l)
+		t.Error("merge list is wrong")
 	}
 }

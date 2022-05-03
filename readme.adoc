@@ -14,6 +14,7 @@ Currently the project is composed of:
 - Merge YAML files automatically following a particular convention, see below.
 - Support for includes.
 - Validate variables using  link:https://www.openapis.org/[OpenAPI v3] schemas. Just place schemas in a `.schemas` directory at the top-level of the agnosticv repository.
+- Customize merge strategies
 - Filter catalog items using JMESPath expressions (`--has` flag)
 
 === Example of agnosticv repositories
@@ -229,6 +230,8 @@ The merge list will be:
 
 == Merging strategies
 
+=== Default ===
+
 When it comes to merging variables, there are different possible strategies.
 
 The default is the following
@@ -241,11 +244,65 @@ The default is the following
 | **append**
 | **replace**
 
-| All the other vars
+| Rest of the vars
 
 Same behavior as if you were using ansible{nbsp}extra{nbsp}vars
 
 | **replace**
+| **replace**
+| **replace**
+|========================
+
+=== Custom merge strategies ===
+
+It is possible to extend agnosticV and define what merge strategy to use on what variable or part of dictionary variable.
+
+To do that, you can define the custom merge strategies in any schema in the `.schemas` directory. Just use the **`x-merge`** keyword at the beginning of the schema. `x-merge` is a list of strategy. Each strategy defines a `path` and a `strategy` name to apply on that path.
+
+[source,yaml]
+.`.schema/schema.yaml`  example of `x-merge` custom strategy
+----
+type: object
+x-merge:
+  - path: /__meta__/access_control # <1>
+    strategy: overwrite # <2>
+properties:
+----
+<1> The path of the variable or key of dictionnary to apply the custom strategy against.
+<2> When merging, agnosticv will overwrite the content of `\\__meta__.access_control` instead of merging it.
+
+For example, with the schema above and following merge list:
+
+----
+# MERGED:
+# fixtures/common.yaml
+# fixtures/test/account.yaml
+# fixtures/test/BABYLON_EMPTY_CONFIG/common.yaml
+# fixtures/test/BABYLON_EMPTY_CONFIG/prod.yaml
+----
+
+The value of `\\__meta__.access_control` from `prod.yaml` will take precedence and overwrite.
+
+Here are the available custom merge strategies:
+
+|========================
+| Strategy | Can be applied to | Dictionaries | Lists | Strings / Numbers
+
+| `overwrite`
+| List or Dict
+| **replace**
+| **replace**
+| **replace**
+
+| `merge`
+| List or Dict
+| **Merge**
+| **Append**
+| **replace**
+
+| `merge-no-append`
+| Dict
+| **Merge**
 | **replace**
 | **replace**
 |========================

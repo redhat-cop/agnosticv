@@ -46,12 +46,12 @@ for ci in $($cli1 --list); do
 	echo YES
 done
 
-for fi in $(find -name common.yaml) $(find -name account.yaml) $(find includes -type f); do
-	echo -n "testing related files $fi ......................."
-	diff -u <($cli1 --list --related $fi) <($cli2 --list --related $fi) > /dev/null
+for fil in $(find -name common.yaml) $(find -name account.yaml) $(find includes -type f); do
+	echo -n "testing related files $fil ......................."
+	diff -u <($cli1 --list --related $fil) <($cli2 --list --related $fil) > /dev/null
 	if [ $? != 0 ]; then
 		echo "NO"
-		diff -u <($cli1 --list --related $fi) <($cli2 --list --related $fi)
+		diff -u <($cli1 --list --related $fil) <($cli2 --list --related $fil)
 		exit 2
 	fi
 	echo YES
