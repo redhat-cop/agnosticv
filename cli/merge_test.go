@@ -204,6 +204,11 @@ func TestMerge(t *testing.T) {
 		t.Error("/__meta__/secrets/0/value should be 'from-top-common.yml'",
 			", found =", found, ", err =", err, ", value =", value.(string))
 	}
+
+	found, value, _, err = Get(merged, "/alist")
+	if !found || err != nil || len(value.([]any)) != 2 {
+		t.Error("/alist  should be merged from account.yaml, and dev.yaml, and thus of length 2")
+	}
 }
 
 func TestMergeStrategyOverwrite(t *testing.T) {
