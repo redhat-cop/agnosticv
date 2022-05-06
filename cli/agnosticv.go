@@ -382,9 +382,7 @@ func abs(item string) string {
 	return item
 }
 func findRoot(item string) string {
-	if itemAbs, err := filepath.Abs(item) ; err == nil {
-		item = itemAbs
-	}
+	item = abs(item)
 
 	if item == "/" {
 		log.Fatal("Root not found.")
