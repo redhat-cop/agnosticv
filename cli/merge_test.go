@@ -22,7 +22,9 @@ var exampleDoc = map[string]any{
 
 func BenchmarkGet(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		Get(exampleDoc, "/foo")
+		if _, _, _, err := Get(exampleDoc, "/foo"); err != nil {
+			return
+		}
 	}
 }
 

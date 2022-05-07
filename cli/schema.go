@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"github.com/getkin/kin-openapi/jsoninfo"
 	"github.com/getkin/kin-openapi/openapi3"
@@ -38,13 +37,12 @@ func (schema *AgnosticvSchema) MarshalJSON() ([]byte, error) {
 
 var schemas []Schema
 
-func initSchemaList() error {
+func initSchemaList() {
 	list, err := getSchemaList()
 	if err != nil {
-		return err
+		logErr.Fatalf("error listing schemas: %v\n", err)
 	}
 	schemas = list
-	return nil
 }
 
 func getSchemaList() ([]Schema, error) {
@@ -68,7 +66,7 @@ func getSchemaList() ([]Schema, error) {
 
 		// 1. Read content of schema in YAML
 
-		pAbs, err := filepath.Abs(p)
+		pAbs := abs(p)
 
 		content, err := ioutil.ReadFile(pAbs)
 		if err != nil {
@@ -100,9 +98,6 @@ func getSchemaList() ([]Schema, error) {
 
 	return result, err
 }
-
-// ErrorSchema for when a catalog item doesn't pass a schema
-var ErrorSchema = errors.New("schema not passed")
 
 func validateAgainstSchemas(path string, data map[string]any) error {
 	logDebug.Println("len(schemas) =", len(schemas))

@@ -418,7 +418,7 @@ func TestInclude(t *testing.T) {
 		t.Error("value 'from_include1' not found")
 	}
 
-	merged, _, err = mergeVars("fixtures/gpte/OCP_CLIENTVM/.testloop.yaml", mergeStrategies)
+	_, _, err = mergeVars("fixtures/gpte/OCP_CLIENTVM/.testloop.yaml", mergeStrategies)
 
 	if err != ErrorIncludeLoop {
 		t.Error("ErrorIncludeLoop expected, got", err)

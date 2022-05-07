@@ -113,9 +113,7 @@ need this parameter unless your files are not in a git repository, or if you wan
 			log.Fatalf("File %s does not exist", rootFlag)
 		}
 
-		if rootAbs, err := filepath.Abs(rootFlag) ; err == nil {
-			rootFlag = rootAbs
-		}
+		rootFlag = abs(rootFlag)
 	}
 }
 
@@ -212,7 +210,9 @@ func isCatalogItem(root, p string) bool {
 func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, orRelatedFlags []string) ([]string, error) {
 	logDebug.Println("findCatalogItems(", workdir, hasFlags, ")")
 	result := []string{}
-	os.Chdir(workdir)
+	if err := os.Chdir(workdir); err != nil {
+		return result, err
+	}
 	if rootFlag == "" {
 		rootFlag = findRoot(workdir)
 	}
@@ -376,10 +376,11 @@ func chrooted(root string, path string) bool {
 }
 
 func abs(item string) string {
-	if itemAbs, err := filepath.Abs(item) ; err == nil {
-		item = itemAbs
+	itemAbs, err := filepath.Abs(item)
+	if err != nil {
+		return item
 	}
-	return item
+	return itemAbs
 }
 func findRoot(item string) string {
 	item = abs(item)
@@ -484,11 +485,7 @@ func main() {
 		rootFlag = findRoot(workDir)
 	}
 
-	err := initSchemaList()
-	if err != nil {
-		logErr.Printf("error listing schemas: %v\n", err)
-		return
-	}
+	initSchemaList()
 
 	if listFlag {
 		catalogItems, err := findCatalogItems(workDir, hasFlags, relatedFlags, orRelatedFlags)

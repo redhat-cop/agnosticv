@@ -1,42 +1,20 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"github.com/go-openapi/jsonpointer"
-	"github.com/imdario/mergo"
 	"io/ioutil"
 	"path/filepath"
 	"reflect"
 	"strings"
+
 	yamljson "github.com/ghodss/yaml"
+	"github.com/go-openapi/jsonpointer"
+	"github.com/imdario/mergo"
 )
 
 type MergeStrategy struct {
 	Strategy string `json:"strategy,omitempty" yaml:"strategy,omitempty"`
 	Path string `json:"path,omitempty" yaml:"path,omitempty"`
-}
-
-var ErrorDocumentType = errors.New("error map[string] expected")
-
-type strategicMergeTransformer struct {
-}
-
-
-func strategicMerge(dst, src map[string]any) error {
-	if err := mergo.Merge(
-		&dst,
-		src,
-		mergo.WithOverride,
-		mergo.WithOverwriteWithEmptyValue,
-		mergo.WithAppendSlice,
-	); err != nil {
-		return err
-	}
-
-	// Cleanup duplicate list items that have the same .name
-	// ...
-	return nil
 }
 
 // initMap initialize a map using a bunch of keys.
@@ -62,6 +40,9 @@ func initMap(m map[string]any, keys []string) {
 // both dst and src are the entire maps
 func Set(dst map[string]any, path string, src map[string]any) error {
 	found, srcObj, _, err := Get(src, path)
+	if err != nil {
+		return err
+	}
 	if !found {
 		return nil
 	}
