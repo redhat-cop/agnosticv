@@ -2,6 +2,11 @@
 # Agnosticd variables
 platform: babylon
 
+adict:
+  strategic_list:
+    - name: foo
+      value: common
+
 output_dir: /tmp/output_dir/{{ env_type }}-{{ guid }}
 env_type: test-empty-config
 cloud_provider: test

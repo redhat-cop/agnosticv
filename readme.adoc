@@ -1,3 +1,5 @@
+:toc2:
+
 = Agnostic Vars
 
 == Description
@@ -286,25 +288,35 @@ The value of `\\__meta__.access_control` from `prod.yaml` will take precedence a
 Here are the available custom merge strategies:
 
 |========================
-| Strategy | Can be applied to | Dictionaries | Lists | Strings / Numbers
+| Strategy | Can be applied to | Dictionaries | Lists | Strings / Numbers | Comment
 
 | `overwrite`
 | List or Dict
 | **replace**
 | **replace**
 | **replace**
+|
 
 | `merge`
 | List or Dict
 | **Merge**
 | **Append**
 | **replace**
+|
 
 | `merge-no-append`
 | Dict
 | **Merge**
 | **replace**
 | **replace**
+|
+
+| `strategic-merge`
+| List or Dict
+| **Strategic Merge**
+| **Strategic Merge**
+| **replace**
+| Merge similar to kubernetes link:https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#notes-on-the-strategic-merge-patch[stategic merge patch]. The patch merge-key for list is `name`.
 |========================
 
 

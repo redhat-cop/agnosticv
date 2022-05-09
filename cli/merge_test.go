@@ -237,3 +237,31 @@ func TestMergeStrategyOverwrite(t *testing.T) {
 		t.Error("Only myspecialgroup should be present", value, expected)
 	}
 }
+
+func TestMergeStrategicMergeList(t *testing.T) {
+	rootFlag = abs("fixtures")
+	initSchemaList()
+	initMergeStrategies()
+	validateFlag = true
+	merged, _, err := mergeVars(
+		"fixtures/test/BABYLON_EMPTY_CONFIG/prod.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, value, _, err := Get(merged, "/adict/strategic_list")
+	if err != nil {
+		t.Error(err)
+	}
+	expected := []any{
+		map[string]any{
+			"name": "foo",
+			"value": "prod",
+		},
+	}
+	if !reflect.DeepEqual(value, expected) {
+		t.Error("Only myspecialgroup should be present", value, expected)
+	}
+}

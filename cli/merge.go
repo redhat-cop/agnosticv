@@ -12,6 +12,10 @@ import (
 	"github.com/imdario/mergo"
 )
 
+
+// MergeStrategy type to define custom merge strategies.
+// Strategy: the name of the strategy
+// Path: the path in the structure of the vars to apply the strategy against.
 type MergeStrategy struct {
 	Strategy string `json:"strategy,omitempty" yaml:"strategy,omitempty"`
 	Path string `json:"path,omitempty" yaml:"path,omitempty"`
@@ -148,6 +152,16 @@ func customStrategyMerge(final map[string]any, source map[string]any, strategy M
 				logDebug.Println("src", src)
 				logDebug.Println("dst", dst)
 				dst = append(dst, src...)
+
+			case "strategic-merge":
+				logDebug.Printf("customStrategyMerge(%v)  strategic merge", strategy)
+				logDebug.Println("src", src)
+				logDebug.Println("dst", dst)
+				dst = append(dst, src...)
+				if dst, err = strategicCleanupSlice(dst); err != nil {
+					return err
+				}
+
 			default:
 				logErr.Fatal("Unknown merge strategy for list: ", strategy.Strategy)
 			}
@@ -193,6 +207,11 @@ func customStrategyMerge(final map[string]any, source map[string]any, strategy M
 				mergo.WithOverride,
 				mergo.WithOverwriteWithEmptyValue,
 			); err != nil {
+				return err
+			}
+
+		case "strategic-merge":
+			if err := strategicMerge(dstMap, src.(map[string]any)); err != nil {
 				return err
 			}
 
