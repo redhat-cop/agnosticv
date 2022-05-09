@@ -102,19 +102,6 @@ func Get(doc map[string]any, str string) (bool, any, reflect.Kind, error) {
 }
 
 func customStrategyMerge(final map[string]any, source map[string]any, strategy MergeStrategy) error {
-
-	// if path is in source => src
-	//    if path is not in final
-	//        create path using path from source
-	//        return
-	//    fi
-	//
-	//    switch strategy
-	//      merge pathDst pathSrc
-	// else
-	//    return
-	// fi
-
 	logDebug.Printf("customStrategyMerge(%v)", strategy)
 
 
