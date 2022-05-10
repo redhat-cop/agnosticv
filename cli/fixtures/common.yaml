@@ -1,8 +1,12 @@
 __meta__:
   secrets:
-  - from-top-common.yml
+    - name: foo
+      value: from-top-common.yml
   toplist:
   - from-root-common.yml
+  access_control:
+    allow_groups:
+      - all
 foo: from-root-common
 fooc: from-root-common
 foodev: from-root-common

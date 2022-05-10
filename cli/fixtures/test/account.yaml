@@ -3,6 +3,13 @@
 # agnosticv catalog_item false
 
 cloud_provider: none
+adict:
+  alist:
+    - fromaccount
+  blist:
+    - fromaccount
+alist:
+  - fromaccount
 
 ##########################
 # Babylon meta variables #

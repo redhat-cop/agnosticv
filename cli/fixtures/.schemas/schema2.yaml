@@ -1,0 +1,43 @@
+---
+type: object
+x-merge:
+  - path: /this/doesntexist/anywhere/and/its/ok
+    strategy: merge
+  - path: /__meta__/access_control
+    strategy: overwrite
+properties:
+  __meta__:
+    type: object
+    additionalProperties: true
+    properties:
+      # Test per-key custom merge strategy
+      access_control:
+        description: >-
+          Access control settings.
+          Access control is exposed through catalog item if configured and is also applied to requests which bypass the catalog by using the API.
+        type: object
+        additionalProperties: false
+        properties:
+          allow_groups:
+            description: >-
+              List of user group names to allow.
+              Group names are OpenShift user groups.
+              If set then only these groups are allowed to access the item.
+              If unset then all groups are allowed.
+            type: array
+            items:
+              type: string
+          deny_groups:
+            description: >-
+              List of user group names to deny.
+              Deny overrides allow and view-only.
+            type: array
+            items:
+              type: string
+          view_only_groups:
+            description: >-
+              List of user group names to allow to view catalog items but not order.
+              Allow and deny both override view-only.
+            type: array
+            items:
+              type: string
