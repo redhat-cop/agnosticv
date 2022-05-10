@@ -9,7 +9,7 @@ Agnosticv is a generic way of organizing and merging YAML files in order to mana
 Currently the project is composed of:
 
 . link:cli[CLI] `agnosticv`, a generic implementation.
-. link:https://github.com/redhat-gpte-devopsautomation/agnosticv-operator[agnosticv-operator] an OpenShift operator that uses the CLI and generates OpenShift Custom Resources for link:https://github.com/redhat-cop/babylon[Babylon] based on the content of the agnosticv repositories. The operator is more opinionated than the CLI as it expects a specific file structure in the agnosticV repository. It is used in our GPTE organization to manage our catalogs.
+. link:https://github.com/redhat-gpte-devopsautomation/agnosticv-operator[agnosticv-operator] an OpenShift operator that uses the CLI and generates OpenShift Custom Resources for link:https://github.com/redhat-cop/babylon[Babylon] based on the content of the agnosticv repositories. The operator is more opinionated than the CLI as it expects a specific file structure in the agnosticV repository. We use it to manage the catalog of our demo portal RHPDS.
 
 === Features ===
 
