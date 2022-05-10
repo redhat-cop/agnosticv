@@ -4,6 +4,9 @@
 
 cloud_provider: none
 adict:
+  strategic_list:
+    - name: foo
+      value: account
   alist:
     - fromaccount
   blist:

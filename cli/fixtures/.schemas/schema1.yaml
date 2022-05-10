@@ -5,6 +5,8 @@ x-merge:
     strategy: merge
   - path: /adict/alist
     strategy: merge
+  - path: /adict/strategic_list
+    strategy: strategic-merge
 properties:
   purpose:
     type: string

@@ -1,6 +1,11 @@
 ---
 purpose: prod
 
+adict:
+  strategic_list:
+    - name: foo
+      value: prod
+
 #########################################
 # Meta variables for admin host scripts #
 # ALL_agnosticv.sh                      #
