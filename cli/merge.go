@@ -305,11 +305,11 @@ func initMergeStrategies() {
 	mergeStrategies = []MergeStrategy{
 		{
 			Path: "/__meta__",
-			Strategy: "merge",
+			Strategy: "strategic-merge",
 		},
 		{
 			Path: "/agnosticv_meta",
-			Strategy: "merge",
+			Strategy: "strategic-merge",
 		},
 	}
 

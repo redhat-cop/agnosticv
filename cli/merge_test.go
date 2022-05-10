@@ -195,9 +195,9 @@ func TestMerge(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if !found || len(value.([]any)) != 5 {
+	if !found || len(value.([]any)) != 4 {
 		logErr.Println(value)
-		t.Error("/__meta__/secrets is missing or doesn't countain 5 elements'",
+		t.Error("/__meta__/secrets is missing or doesn't countain 4 elements'",
 			", found =", found, ", err =", err, ", #elem =", len(value.([]any)))
 	}
 

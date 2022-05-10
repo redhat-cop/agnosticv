@@ -242,8 +242,8 @@ The default is the following
 | What | Dictionaries | Lists | Strings / Numbers
 
 |`\\__meta__` and `agnosticv_meta` dictionaries
-| **merge**
-| **append**
+| **strategic-merge** footnote:strategic-merge[Merge similar to kubernetes link:https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#notes-on-the-strategic-merge-patch[stategic merge patch]. The patch merge-key for list is `name`.]
+| **strategic-merge** footnote:strategic-merge[]
 | **replace**
 
 | Rest of the vars
@@ -310,7 +310,7 @@ Here are the available custom merge strategies:
 
 | `strategic-merge`
 | List or Dict
-| **Strategic Merge** footnote:strategic-merge[Merge similar to kubernetes link:https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/#notes-on-the-strategic-merge-patch[stategic merge patch]. The patch merge-key for list is `name`.]
+| **Strategic Merge** footnote:strategic-merge[]
 | **Strategic Merge** footnote:strategic-merge[]
 | **replace**
 |========================
