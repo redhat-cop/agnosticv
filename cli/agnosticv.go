@@ -494,10 +494,6 @@ func main() {
 	} else {
 		logErr.Fatal(errWorkDir)
 	}
-	// always determine the chroot
-	if rootFlag == "" {
-		rootFlag = findRoot(workDir)
-	}
 
 	initSchemaList()
 
