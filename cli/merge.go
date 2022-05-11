@@ -351,3 +351,10 @@ func initMergeStrategies() {
 	}
 	logDebug.Println("(INIT merge strategies) ", mergeStrategies)
 }
+
+func printMergeStrategies() {
+	fmt.Printf("# STRATEGIES:\n")
+	for _, mergeStrategy := range mergeStrategies {
+		fmt.Printf("#   %-15s %s\n", mergeStrategy.Strategy, mergeStrategy.Path)
+	}
+}

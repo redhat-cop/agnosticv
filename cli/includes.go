@@ -57,9 +57,9 @@ func printPaths(mergeList []Include) {
 	}
 	for i := 0; i < len(mergeList); i = i + 1 {
 		if relativePath, err := filepath.Rel(workDir, mergeList[i].path) ; err == nil && len(relativePath) < len(mergeList[i].path) {
-			fmt.Printf("# %s\n", relativePath)
+			fmt.Printf("#   %s\n", relativePath)
 		} else {
-			fmt.Printf("# %s\n", mergeList[i].path)
+			fmt.Printf("#   %s\n", mergeList[i].path)
 		}
 	}
 }

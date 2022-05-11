@@ -514,6 +514,7 @@ func main() {
 		out, _:= yaml.Marshal(merged)
 
 		fmt.Printf("---\n")
+		printMergeStrategies()
 		printPaths(mergeList)
 		fmt.Printf("%s", out)
 	}
