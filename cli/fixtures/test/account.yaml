@@ -3,6 +3,9 @@
 # agnosticv catalog_item false
 
 cloud_provider: none
+strategic_dict:
+  alist: ["1", "2"]
+
 adict:
   strategic_list:
     - name: foo
@@ -27,3 +30,8 @@ __meta__:
     scm_url: https://github.com/redhat-cop/agnosticd.git
     scm_type: git
     type: agnosticd
+
+  catalog:
+    keywords:
+      - keyword1
+      - keyword2

@@ -3,8 +3,12 @@ type: object
 x-merge:
   - path: /this/doesntexist/anywhere/and/its/ok
     strategy: merge
+
   - path: /__meta__/access_control
     strategy: overwrite
+
+  - path: /__meta__/catalog
+    strategy: strategic-merge
 properties:
   __meta__:
     type: object

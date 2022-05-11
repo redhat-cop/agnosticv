@@ -2,6 +2,8 @@
 # Agnosticd variables
 platform: babylon
 
+strategic_dict:
+  alist: ["3", "4"]
 adict:
   strategic_list:
     - name: foo

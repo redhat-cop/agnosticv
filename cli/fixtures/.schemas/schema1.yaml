@@ -3,9 +3,14 @@ type: object
 x-merge:
   - path: /alist
     strategy: merge
+
   - path: /adict/alist
     strategy: merge
+
   - path: /adict/strategic_list
+    strategy: strategic-merge
+
+  - path: /strategic_dict
     strategy: strategic-merge
 properties:
   purpose:

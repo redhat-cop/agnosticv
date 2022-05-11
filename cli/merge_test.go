@@ -262,6 +262,23 @@ func TestMergeStrategicMergeList(t *testing.T) {
 		},
 	}
 	if !reflect.DeepEqual(value, expected) {
-		t.Error("Only myspecialgroup should be present", value, expected)
+		t.Error("Only prod should be present", value, expected)
+	}
+
+	_, value, _, err = Get(merged, "/strategic_dict/alist")
+	if err != nil {
+		t.Error(err)
+	}
+	expected = []any{"1", "2", "3", "4"}
+	if !reflect.DeepEqual(value, expected) {
+		t.Error("lists do not match", value, expected)
+	}
+	_, value, _, err = Get(merged, "/__meta__/catalog/keywords")
+	if err != nil {
+		t.Error(err)
+	}
+	expected = []any{"keyword1", "keyword2"}
+	if !reflect.DeepEqual(value, expected) {
+		t.Error("lists do not match", value, expected)
 	}
 }
