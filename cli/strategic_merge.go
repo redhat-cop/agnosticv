@@ -12,7 +12,7 @@ func strategicCleanupSlice(elems []any) ([]any, error) {
 	result := []any{}
 	done := map[string]int{}
 
-	for index, elem := range elems {
+	for _, elem := range elems {
 		if reflect.TypeOf(elem).Kind() != reflect.Map {
 			// strategic merge works only on map, if it's not a map, just add the elem and continue
 			result = append(result, elem)
@@ -29,15 +29,20 @@ func strategicCleanupSlice(elems []any) ([]any, error) {
 			nameStr := name.(string)
 			if doneIndex, ok := done[nameStr]; ok {
 				// An element with the same name exists, replace that element
+				if doneIndex >= len(result) {
+				  return result, fmt.Errorf("index previously found is now out of bound, found:%v  len:%v", doneIndex, len(result))
+				}
 				result1 := append(result[:doneIndex], elem)
 				result = append(result1, result[doneIndex+1:]...)
 				continue
 			}
 			// Append element
+			done[nameStr] = len(result)
 			result = append(result, elem)
-			done[nameStr] = index
+
 			continue
 		}
+
 		result = append(result, elem)
 	}
 

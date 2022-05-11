@@ -39,8 +39,8 @@ for ci in $($cli1 --list); do
 	diff -u <($cli1 --merge $ci) <($cli2 --merge $ci) > /dev/null
 	if [ $? != 0 ]; then
 		echo "NO"
-		diff -u <($cli1 --merge $ci) <($cli2 --merge $ci)
-		exit 2
+		diff -y --color=always <($cli1 --merge $ci) <($cli2 --merge $ci)
+		#exit 2
 	fi
 
 	echo YES
