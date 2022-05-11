@@ -10,8 +10,8 @@ import (
 	yamljson "github.com/ghodss/yaml"
 	"github.com/go-openapi/jsonpointer"
 	"github.com/imdario/mergo"
+	"github.com/mohae/deepcopy"
 )
-
 
 // MergeStrategy type to define custom merge strategies.
 // Strategy: the name of the strategy
@@ -108,13 +108,16 @@ func Get(doc map[string]any, str string) (bool, any, reflect.Kind, error) {
 func customStrategyMerge(final map[string]any, source map[string]any, strategy MergeStrategy) error {
 	logDebug.Printf("customStrategyMerge(%v)", strategy)
 
+	// First deep copy source to avoid any weird behavior
+	src := deepcopy.Copy(source)
+	srcMap := src.(map[string]any)
 
 	pointer, err := jsonpointer.New(strategy.Path)
 	if err != nil {
 		return err
 	}
 
-	srcFound, src, srcType, srcErr := Get(source, strategy.Path)
+	srcFound, src, srcType, srcErr := Get(srcMap, strategy.Path)
 	if srcErr != nil {
 		logErr.Fatal(srcErr)
 	}
@@ -126,7 +129,7 @@ func customStrategyMerge(final map[string]any, source map[string]any, strategy M
 
 	if srcFound {
 		if !dstFound {
-			if err := Set(final, strategy.Path, source); err != nil {
+			if err := Set(final, strategy.Path, srcMap); err != nil {
 				return err
 			}
 			return nil
@@ -278,10 +281,13 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 
 	logDebug.Println(mergeListObjects)
 	merged := make(map[string]any)
-	for _, current := range mergeListObjects {
-		// Iterate over all the custom merge strategies and apply them in order
-		for _, mergeStrategy := range mergeStrategies {
-			if err := customStrategyMerge(merged, current, mergeStrategy); err != nil {
+
+	// Iterate over all the custom merge strategies and apply them in order
+	for _, mergeStrategy := range mergeStrategies {
+		mergedStrategy := make(map[string]any)
+
+		for _, current := range mergeListObjects {
+			if err := customStrategyMerge(mergedStrategy, current, mergeStrategy); err != nil {
 				logErr.Println(
 					"Error in custom strategy when merging",
 					p,
@@ -291,6 +297,27 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 				return map[string]any{}, []Include{}, err
 			}
 		}
+
+		// Write back result into merged, using "overwrite"
+		err := customStrategyMerge(
+			merged,
+			mergedStrategy,
+			MergeStrategy{
+				Path: mergeStrategy.Path,
+				Strategy: "overwrite",
+			},
+		)
+
+		if err != nil {
+			logErr.Println(
+				"Error in custom strategy when merging",
+				p,
+				"with strategy",
+				mergeStrategy,
+			)
+			return map[string]any{}, []Include{}, err
+		}
+
 	}
 
 	// Override final with merged vars
