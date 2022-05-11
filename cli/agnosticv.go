@@ -31,6 +31,12 @@ var mergeFlag string
 var debugFlag bool
 var rootFlag string
 var validateFlag bool
+var versionFlag bool
+
+// Build info
+var Version = "development"
+var buildTime = "undefined"
+var buildCommit = "HEAD"
 
 // Methods to be able to use the flag multiple times
 func (i *arrayFlags) String() string {
@@ -81,8 +87,16 @@ Examples:
 	flag.StringVar(&rootFlag, "root", "", `The top directory of the agnosticv files. Files outside of this directory will not be merged.
 By default, it's empty, and the scope of the git repository is used, so you should not
 need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.`)
+	flag.BoolVar(&versionFlag, "version", false, "Print build version.")
 
 	flag.Parse()
+
+	if versionFlag {
+		fmt.Println("Version:", Version)
+		fmt.Println("Build time:", buildTime)
+		fmt.Println("Build commit:", buildCommit)
+		os.Exit(0)
+	}
 
 	if len(hasFlags) > 0 && listFlag == false {
 		flag.PrintDefaults()
