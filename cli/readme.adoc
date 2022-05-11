@@ -9,7 +9,8 @@ go build -o build/agnosticv
 For releases, use link:https://github.com/mitchellh/gox[gox] to build all target archs:
 
 ----
-$ gox --output="build/agnosticv_{{.OS}}_{{.Arch}}"
+$ VERSION=...
+$ gox --output="build/agnosticv_{{.OS}}_{{.Arch}}"  -ldflags="-X 'main.Version=${VERSION}' -X 'main.buildTime=$(date -u)' -X 'main.buildCommit=$(git rev-parse HEAD)'"
 Number of parallel builds: 7
 
 -->    darwin/amd64: github.com/redhat-cop/agnosticv/cli
@@ -37,7 +38,7 @@ Number of parallel builds: 7
 For Mach ARM:
 
 ----
-env GOOS=darwin GOARCH=arm64 go build  -o build/agnosticv_darwin_arm64
+env GOOS=darwin GOARCH=arm64 go build -ldflags="-X 'main.Version=${VERSION}' -X 'main.buildTime=$(date -u)' -X 'main.buildCommit=$(git rev-parse HEAD)'" -o build/agnosticv_darwin_arm64
 ----
 
 Then attach the binaries to the release in github.
