@@ -39,6 +39,32 @@ func TestCleanupSlice(t *testing.T) {
 `),
 			err: nil,
 		},
+		// Test when there are several reductions to make
+		{
+			doc: []byte(`
+- name: foo
+  value: bar
+- name: foo
+  value: bar2
+- name: foo
+  value: bar2
+- name: foo2
+  value: bar
+- name: foo
+  value: bar3
+- name: foo2
+  value: bar2
+- name: foo2
+  value: bar3
+`),
+			expected: []byte(`
+- name: foo
+  value: bar3
+- name: foo2
+  value: bar3
+`),
+			err: nil,
+		},
 		{
 			doc: []byte(`
 - name: foo
