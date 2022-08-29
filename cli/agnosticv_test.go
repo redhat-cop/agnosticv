@@ -249,7 +249,7 @@ func TestWalk(t *testing.T) {
 		{
 			description: "No JMES filtering",
 			hasFlags: []string{},
-			count: 11,
+			count: 12,
 		},
 		{
 			description: "Related includes/include1.yaml",
@@ -285,7 +285,7 @@ func TestWalk(t *testing.T) {
 			hasFlags: []string{},
 			relatedFlags: []string{"fixtures/includes/include1.yaml"},
 			orRelatedFlags: []string{"fixtures/common.yaml"},
-			count: 11,
+			count: 12,
 		},
 		{
 			description: "Related (exclusive + inclusive) to /common.yaml and --has flag",
@@ -472,8 +472,100 @@ func TestGetMergeList(t *testing.T) {
 		t.Fatal("getMergeList failed")
 	}
 
-	if len(l) != 4 {
+	if len(l) != 5 {
 		t.Log(l)
 		t.Error("merge list is wrong")
+	}
+}
+
+func TestGetMetaPath(t *testing.T) {
+	rootFlag = abs("fixtures")
+	validateFlag = true
+	initSchemaList()
+
+	testCases := []struct {
+		path string
+		meta string
+		expectedErr error
+	}{
+		{
+			path: "/ok/dev.yaml",
+			meta: "/ok/dev.meta.yaml",
+			expectedErr: nil,
+		},
+		{
+			path: "/ok/dev.yml",
+			meta: "/ok/dev.meta.yml",
+			expectedErr: nil,
+		},
+		{
+			path: "dev.yaml",
+			meta: "dev.meta.yaml",
+			expectedErr: nil,
+		},
+		{
+			path: "dev.yaml",
+			meta: "dev.meta.yaml",
+			expectedErr: nil,
+		},
+		{
+			path: "",
+			meta: "",
+			expectedErr: ErrorEmptyPath,
+		},
+	}
+
+	for _, tc := range testCases {
+		result, err := getMetaPath(tc.path)
+
+		if err != tc.expectedErr {
+			t.Error("with", tc.path, tc.meta, ":", err, "!=", tc.expectedErr)
+		}
+
+		if tc.meta != result {
+			t.Error("with", tc.path, ":", result, "!=", tc.meta)
+		}
+	}
+
+
+}
+
+func TestIsMetaPath(t *testing.T) {
+	rootFlag = abs("fixtures")
+	validateFlag = true
+	initSchemaList()
+
+	testCases := []struct {
+		path string
+		result bool
+	}{
+		{
+			path: "/ok/dev.yaml",
+			result: false,
+		},
+		{
+			path: "/ok/dev.meta.yaml",
+			result: true,
+		},
+		{
+			path: "dev.meta.yml",
+			result: true,
+		},
+		{
+			path: ".yml",
+			result: false,
+		},
+		{
+			path: "",
+			result: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		result := isMetaPath(tc.path)
+
+		if result != tc.result {
+			t.Error("with", tc.path, ":", result, "!=", tc.result)
+		}
 	}
 }

@@ -12,9 +12,3 @@ adict:
 output_dir: /tmp/output_dir/{{ env_type }}-{{ guid }}
 env_type: test-empty-config
 cloud_provider: test
-
-__meta__:
-  secrets:
-    - name: a
-      value: fromcommon
-    - name: onlyincommon

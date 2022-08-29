@@ -1,0 +1,6 @@
+---
+__meta__:
+  secrets:
+    - name: a
+      value: fromcommon
+    - name: onlyincommon

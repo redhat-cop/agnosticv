@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 // Include represent the include file
@@ -18,6 +19,9 @@ type Include struct {
 
 // ErrorIncludeLoop happens in case of an infinite loop between included files
 var ErrorIncludeLoop = errors.New("include loop")
+
+// ErrorEmptyPath happens when a path is an empty string
+var ErrorEmptyPath = errors.New("empty path")
 
 // ErrorIncludeOutOfChroot happens when an include is not in the inside the agnosticV repo.
 var ErrorIncludeOutOfChroot = errors.New("include path is out of chroot")
@@ -31,6 +35,33 @@ func containsPath(l []Include, p string) bool {
     return false
 }
 
+// getMetaPath builds the path of the meta by prepending '.meta' to
+// the original extension of the included file.
+//
+// dev.yaml => dev.meta.yaml
+// dev.yml => dev.meta.yml
+func getMetaPath(path string) (string, error) {
+	if path == "" {
+		return "", ErrorEmptyPath
+	}
+
+	extension := filepath.Ext(path)
+	meta := strings.TrimSuffix(path, extension) + ".meta" + extension
+
+	return meta, nil
+}
+
+func isMetaPath(path string) bool {
+	ext := filepath.Ext(path)
+	if ext == ".yml" || ext == ".yaml" {
+		if filepath.Ext(strings.TrimSuffix(path, ext)) == ".meta" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // function getMergeList return the merge list for a catalog items
 // merge list contains: common files and includes.
 func getMergeList(path string) ([]Include, error) {
@@ -42,6 +73,9 @@ func getMergeList(path string) ([]Include, error) {
 		if err != nil {
 			logErr.Println("Error loading includes for", next)
 			return result, err
+		}
+		if meta, err := getMetaPath(next); err == nil && fileExists(meta) {
+			result = append([]Include{{path: meta}}, result...)
 		}
 		result = append([]Include{{path: next}}, result...)
 		result = append(allIncludes, result...)
