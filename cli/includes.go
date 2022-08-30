@@ -75,7 +75,14 @@ func getMergeList(path string) ([]Include, error) {
 			return result, err
 		}
 		if meta, err := getMetaPath(next); err == nil && fileExists(meta) {
+			allIncludesMeta, innerDone, err := parseAllIncludes(meta, done)
+			if err != nil {
+				logErr.Println("Error loading includes for", meta)
+				return result, err
+			}
+			done = innerDone
 			result = append([]Include{{path: meta}}, result...)
+			result = append(allIncludesMeta, result...)
 		}
 		result = append([]Include{{path: next}}, result...)
 		result = append(allIncludes, result...)
