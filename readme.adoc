@@ -110,7 +110,7 @@ cli $ ./agnosticv --merge fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
 # MERGED:
 # fixtures/common.yaml
 # fixtures/test/account.yaml
-# fixtures/test/account.meta.yaml
+# fixtures/test/account.__meta__.yaml
 # fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml
 # fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
 __meta__:
@@ -240,16 +240,11 @@ The meta file can contain the value of the  `\\__meta__` dictionary. It is a con
 
 For example, the following files are valid meta files:
 
-* `common.meta.yml` meta file for `common.yml`
-* `common.meta.yaml` meta file for `common.yaml`
-* `account.meta.yml` meta file for `account.yml`
-* `account.meta.yaml` meta file for `account.yaml`
-* `dev.meta.yml` meta file for `dev.yml`
-* `dev.meta.yaml` meta file for `dev.yaml`
+* `common.__meta__.yml` meta file for `common.yml`
+* `account.__meta__.yml` meta file for `account.yml`
+* `dev.__meta__.yml` meta file for `dev.yml`
 
 WARNING: you can only put the content of the `\\__meta__` variable in a meta file.
-
-NOTE: the extension has to match the extension of the included file.
 
 === Leaf files ===
 

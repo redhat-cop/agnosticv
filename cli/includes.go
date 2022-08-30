@@ -35,26 +35,36 @@ func containsPath(l []Include, p string) bool {
     return false
 }
 
-// getMetaPath builds the path of the meta by prepending '.meta' to
+// getMetaPath builds the path of the meta by prepending '.__meta__' to
 // the original extension of the included file.
 //
-// dev.yaml => dev.meta.yaml
-// dev.yml => dev.meta.yml
+// dev.yaml => dev.__meta__.yaml
+// dev.yml => dev.__meta__.yml
 func getMetaPath(path string) (string, error) {
 	if path == "" {
 		return "", ErrorEmptyPath
 	}
 
 	extension := filepath.Ext(path)
-	meta := strings.TrimSuffix(path, extension) + ".meta" + extension
+	meta := strings.TrimSuffix(path, extension) + ".__meta__"
 
-	return meta, nil
+	// Detect which extension to use based on file existence
+	if fileExists(meta + ".yml") {
+		return meta + ".yml", nil
+	}
+
+	if fileExists(meta + ".yaml") {
+		return meta + ".yaml", nil
+	}
+
+	// Return same extension as file
+	return meta + extension, nil
 }
 
 func isMetaPath(path string) bool {
 	ext := filepath.Ext(path)
 	if ext == ".yml" || ext == ".yaml" {
-		if filepath.Ext(strings.TrimSuffix(path, ext)) == ".meta" {
+		if filepath.Ext(strings.TrimSuffix(path, ext)) == ".__meta__" {
 			return true
 		}
 	}
