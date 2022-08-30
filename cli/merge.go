@@ -270,21 +270,18 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 			return map[string]any{}, []Include{}, err
 		}
 
-		// Ensure meta file only has __meta__ or agnosticv_meta variables
+		// Ensure meta file doesn't have the __meta__ key but only __meta__ content
 		if isMetaPath(mergeList[i].path) {
-			if len(current) > 2 {
+			if _, ok := current["__meta__"]; ok {
 				logErr.Println("Meta file", mergeList[i].path,
-					"has more than 2 variables. Only __meta__ and agnosticv_meta are allowed.")
+					"has __meta__ key. Please place the content of __meta__ directly in the meta file.")
 				return map[string]any{}, []Include{}, ErrorIncorrectMeta
 			}
-			for key, _ := range current {
-				if key != "__meta__" && key != "agnosticv_meta" {
-					logErr.Println("Incorrect meta file", mergeList[i].path,
-						". Only __meta__ and agnosticv_meta variables are allowed.")
-					return map[string]any{}, []Include{}, ErrorIncorrectMeta
-				}
-			}
 
+			// Inject content into the __meta__ key
+			newCurrent := make(map[string]any)
+			newCurrent["__meta__"] = current
+			current = newCurrent
 		}
 
 		logDebug.Println("(mergelist) append", mergeList[i])

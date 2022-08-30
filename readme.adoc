@@ -142,6 +142,7 @@ go build -o agnosticv
 * _Catalog item_, or _Leaf_: a file that is considered as a catalog item. It will appear when listing an agnosticv repository with `agnosticv --list`. To print the content of a catalog item, you run `agnosticv --merge PATH`. That will merge common files, meta file, included files, and finally the leaf in order to produce the catalog item.
 * _Common file_:  a file that is automatically included in the merge list. Ex: `common.yaml`
 * _Included file_: any file that is included in the merge list using the `#include PATH` feature
+* _Meta file_: Any file ending with `.__meta__.yml` or `.__meta__.yaml`. It contains the value of the `__meta__` dictionary.
 
 === Common files ===
 
@@ -180,6 +181,7 @@ And:
 +
 are the same.
 * `FILENAME` is added to the merge list right **before** current file regardless of the position of `#include` in the file. In other words, current file vars take precedence over included files vars.
+** That's also a reason why you should put all your includes at the top of the file.
 * if `FILENAME` starts with `/` then path is absolute to the AgnosticV repo.
 ** if not, path is relative to current file
 
@@ -234,7 +236,7 @@ The merge list will be:
 === Meta files ===
 
 For any common, leaf, or included file, you can create an associated meta file to be automatically included.
-The meta file can contain the `agnosticv_meta` or `\\__meta__` variables.
+The meta file can contain the value of the  `\\__meta__` dictionary. It is a convenient way to separate that special dictionary from the other variables.
 
 For example, the following files are valid meta files:
 
@@ -245,7 +247,7 @@ For example, the following files are valid meta files:
 * `dev.meta.yml` meta file for `dev.yml`
 * `dev.meta.yaml` meta file for `dev.yaml`
 
-WARNING: you can only put the `\\__meta__` and `agnosticv_meta` variables in a meta file.
+WARNING: you can only put the content of the `\\__meta__` variable in a meta file.
 
 NOTE: the extension has to match the extension of the included file.
 

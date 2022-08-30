@@ -1,5 +1,5 @@
 ---
 # this is not allowed
-wrong: true
-
-__meta__: {}
+__meta__:
+  secrets:
+    - name: bla
