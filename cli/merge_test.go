@@ -223,8 +223,22 @@ func TestMerge(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.HasSuffix(includeList[5].path, "includes/include1.yaml") {
-		t.Error("include1.yaml is missing in the merge list.", includeList[4].path)
+	expectedMergeList := []string{
+		"/common.yaml",
+		"/test/account.yaml",
+		"/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
+		"/includes/include2.__meta__.yml",
+		"/includes/include1.__meta__.yaml",
+		"/includes/include1.yaml",
+		"/test/BABYLON_EMPTY_CONFIG_AWS/test.__meta__.yaml",
+		"/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
+	}
+	for i, v := range expectedMergeList {
+		if !strings.HasSuffix(includeList[i].path, v) {
+			t.Error(v, "not at the position", i, "in the merge list of ",
+				"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
+				"found", includeList[i].path, "instead")
+		}
 	}
 
 	if v, ok := merged["from_include1"]; !ok || v != "value1" {
