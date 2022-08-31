@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 	"reflect"
+	"strings"
 )
 
 var exampleDoc = map[string]any{
@@ -210,6 +211,24 @@ func TestMerge(t *testing.T) {
 	found, value, _, err = Get(merged, "/alist")
 	if !found || err != nil || len(value.([]any)) != 2 {
 		t.Error("/alist  should be merged from account.yaml, and dev.yaml, and thus of length 2")
+	}
+
+	// Ensure includes work as expected in meta file
+	// see fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.__meta__yaml
+	merged, includeList, err := mergeVars(
+		"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.HasSuffix(includeList[4].path, "includes/include1.yaml") {
+		t.Error("include1.yaml is missing in the merge list.", includeList[4].path)
+	}
+
+	if v, ok := merged["from_include1"]; !ok || v != "value1" {
+		t.Error("Value from include1.yaml not found in the merge result.")
 	}
 }
 

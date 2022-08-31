@@ -1,2 +1,2 @@
 ---
-#include /cli/fixtures/includes/include1.yaml
+#include ../../includes/include1.yaml
