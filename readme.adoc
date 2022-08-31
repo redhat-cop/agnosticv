@@ -246,6 +246,32 @@ For example, the following files are valid meta files:
 
 WARNING: you can only put the content of the `\\__meta__` variable in a meta file.
 
+.example1: content of meta file
+[source,yaml]
+----
+__meta__:
+  secrets:
+    - name: mysecret
+----
+
+.example2: with the content of `\\__meta__` directly, same as example1
+[source,yaml]
+----
+secrets:
+  - name: mysecret
+----
+
+.example3: *wrong* meta file - This will fail
+[source,yaml]
+----
+__meta__:
+  secrets:
+    - name: mysecret
+
+another_var: value <1>
+----
+<1> other variables than `\\__meta__` are not allowed
+
 === Leaf files ===
 
 The "leaf" files, or catalog items, are just the rest of the YAML files, having one of these extensions:

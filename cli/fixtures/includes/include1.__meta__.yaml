@@ -1,2 +1,3 @@
 ---
-from_include1_meta: value1
+__meta__:
+    from_include1_meta: value1
