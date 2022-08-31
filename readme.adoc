@@ -235,7 +235,7 @@ The merge list will be:
 
 === Meta files ===
 
-For any common file or leaf file, you can create an associated meta file to be automatically included.
+For any common file, leaf file, or included file, you can create an associated meta file to be automatically included.
 The meta file can contain the value of the  `\\__meta__` dictionary. It is convenient to separate that special dictionary from the other variables.
 
 For example, the following files are valid meta files:

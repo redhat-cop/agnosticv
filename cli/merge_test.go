@@ -223,12 +223,22 @@ func TestMerge(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !strings.HasSuffix(includeList[4].path, "includes/include1.yaml") {
+	if !strings.HasSuffix(includeList[5].path, "includes/include1.yaml") {
 		t.Error("include1.yaml is missing in the merge list.", includeList[4].path)
 	}
 
 	if v, ok := merged["from_include1"]; !ok || v != "value1" {
 		t.Error("Value from include1.yaml not found in the merge result.")
+	}
+	// Ensure __meta__.from_include2_meta  is defined
+	found, value, _, err = Get(merged, "/__meta__/from_include2_meta")
+	if !found || err != nil || value != "value2" {
+		t.Error("/__meta__/from_include2_meta  be merged from include")
+	}
+
+	found, value, _, err = Get(merged, "/__meta__/from_include1_meta")
+	if !found || err != nil || value != "value1" {
+		t.Error("/__meta__/from_include1_meta  be merged from detected meta")
 	}
 }
 
