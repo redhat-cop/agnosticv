@@ -240,9 +240,9 @@ The meta file can contain the value of the  `\\__meta__` dictionary. It is conve
 
 For example, the following files are valid meta files:
 
-* `common.__meta__.yml` meta file for `common.yml`
-* `account.__meta__.yml` meta file for `account.yml`
-* `dev.__meta__.yml` meta file for `dev.yml`
+* `common.\\__meta__.yml` meta file for `common.yml`
+* `account.\\__meta__.yml` meta file for `account.yml`
+* `dev.\\__meta__.yml` meta file for `dev.yml`
 
 WARNING: you can only put the content of the `\\__meta__` variable in a meta file.
 
