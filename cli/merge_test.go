@@ -227,10 +227,10 @@ func TestMerge(t *testing.T) {
 		"/common.yaml",
 		"/test/account.yaml",
 		"/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
-		"/includes/include2.__meta__.yml",
-		"/includes/include1.__meta__.yaml",
+		"/includes/include2.meta.yml",
+		"/includes/include1.meta.yaml",
 		"/includes/include1.yaml",
-		"/test/BABYLON_EMPTY_CONFIG_AWS/test.__meta__.yaml",
+		"/test/BABYLON_EMPTY_CONFIG_AWS/test.meta.yaml",
 		"/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
 	}
 	for i, v := range expectedMergeList {

@@ -490,22 +490,22 @@ func TestGetMetaPath(t *testing.T) {
 	}{
 		{
 			path: "/ok/dev.yaml",
-			meta: "/ok/dev.__meta__.yaml",
+			meta: "/ok/dev.meta.yaml",
 			expectedErr: nil,
 		},
 		{
 			path: "/ok/dev.yml",
-			meta: "/ok/dev.__meta__.yml",
+			meta: "/ok/dev.meta.yml",
 			expectedErr: nil,
 		},
 		{
 			path: "dev.yaml",
-			meta: "dev.__meta__.yaml",
+			meta: "dev.meta.yaml",
 			expectedErr: nil,
 		},
 		{
 			path: "dev.yaml",
-			meta: "dev.__meta__.yaml",
+			meta: "dev.meta.yaml",
 			expectedErr: nil,
 		},
 		{
@@ -544,11 +544,11 @@ func TestIsMetaPath(t *testing.T) {
 			result: false,
 		},
 		{
-			path: "/ok/dev.__meta__.yaml",
+			path: "/ok/dev.meta.yaml",
 			result: true,
 		},
 		{
-			path: "dev.__meta__.yml",
+			path: "dev.meta.yml",
 			result: true,
 		},
 		{

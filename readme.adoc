@@ -110,7 +110,7 @@ cli $ ./agnosticv --merge fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
 # MERGED:
 # fixtures/common.yaml
 # fixtures/test/account.yaml
-# fixtures/test/account.__meta__.yaml
+# fixtures/test/account.meta.yaml
 # fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml
 # fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
 __meta__:
@@ -142,7 +142,7 @@ go build -o agnosticv
 * _Catalog item_, or _Leaf_: a file considered a catalog item. It appears when listing an agnosticv repository with `agnosticv --list`. To print the content of a catalog item, you run `agnosticv --merge PATH`. That merges common files, meta files, included files, and finally, the leaf to produce the catalog item.
 * _Common file_:  a file that is automatically included in the merge list. Ex: `common.yaml`
 * _Included file_: any file that is included in the merge list using the `#include PATH` feature
-* _Meta file_: Any file ending with `.__meta__.yml` or `.__meta__.yaml`. It contains the value of the `__meta__` dictionary.
+* _Meta file_: Any file ending with `.meta.yml` or `.meta.yaml`. It contains the value of the `__meta__` dictionary.
 
 === Common files ===
 
@@ -240,9 +240,9 @@ The meta file can contain the value of the  `\\__meta__` dictionary. It is conve
 
 For example, the following files are valid meta files:
 
-* `common.\\__meta__.yml` meta file for `common.yml`
-* `account.\\__meta__.yml` meta file for `account.yml`
-* `dev.\\__meta__.yml` meta file for `dev.yml`
+* `common.meta.yml` meta file for `common.yml`
+* `account.meta.yml` meta file for `account.yml`
+* `dev.meta.yml` meta file for `dev.yml`
 
 WARNING: you can only put the content of the `\\__meta__` variable in a meta file.
 
