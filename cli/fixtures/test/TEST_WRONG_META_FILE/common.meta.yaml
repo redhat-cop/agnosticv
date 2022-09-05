@@ -3,3 +3,5 @@
 __meta__:
   secrets:
     - name: bla
+
+notallowed: true
