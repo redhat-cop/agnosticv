@@ -22,11 +22,27 @@ cd ${1}
 cli1="${2}"
 cli2="${3}"
 
+echo -n "Testing listing ......................."
 diff -u <($cli1 --list) <($cli2 --list)
 if [ $? != 0 ]; then
 	echo >&2 "Listing is not the same"
 	exit 2
 fi
+echo OK
+
+for dir in *; do
+    if [ -d $dir ]; then
+        echo -n "Testing listing in ${dir}......................."
+        cd "${dir}"
+        diff -u <($cli1 --list) <($cli2 --list)
+        if [ $? != 0 ]; then
+            echo >&2 "Listing is not the same"
+            exit 2
+        fi
+        echo OK
+        cd ${1}
+    fi
+done
 
 diff -u <($cli1 --list --has __meta__.catalog) <($cli2 --list --has __meta__.catalog)
 if [ $? != 0 ]; then

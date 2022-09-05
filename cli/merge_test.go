@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 	"reflect"
+	"strings"
 )
 
 var exampleDoc = map[string]any{
@@ -210,6 +211,48 @@ func TestMerge(t *testing.T) {
 	found, value, _, err = Get(merged, "/alist")
 	if !found || err != nil || len(value.([]any)) != 2 {
 		t.Error("/alist  should be merged from account.yaml, and dev.yaml, and thus of length 2")
+	}
+
+	// Ensure includes work as expected in meta file
+	// see fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.__meta__yaml
+	merged, includeList, err := mergeVars(
+		"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedMergeList := []string{
+		"/common.yaml",
+		"/test/account.yaml",
+		"/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
+		"/includes/include2.meta.yml",
+		"/includes/include1.meta.yaml",
+		"/includes/include1.yaml",
+		"/test/BABYLON_EMPTY_CONFIG_AWS/test.meta.yaml",
+		"/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
+	}
+	for i, v := range expectedMergeList {
+		if !strings.HasSuffix(includeList[i].path, v) {
+			t.Error(v, "not at the position", i, "in the merge list of ",
+				"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
+				"found", includeList[i].path, "instead")
+		}
+	}
+
+	if v, ok := merged["from_include1"]; !ok || v != "value1" {
+		t.Error("Value from include1.yaml not found in the merge result.")
+	}
+	// Ensure __meta__.from_include2_meta  is defined
+	found, value, _, err = Get(merged, "/__meta__/from_include2_meta")
+	if !found || err != nil || value != "value2" {
+		t.Error("/__meta__/from_include2_meta  be merged from include")
+	}
+
+	found, value, _, err = Get(merged, "/__meta__/from_include1_meta")
+	if !found || err != nil || value != "value1" {
+		t.Error("/__meta__/from_include1_meta  be merged from detected meta")
 	}
 }
 

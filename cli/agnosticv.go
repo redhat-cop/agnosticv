@@ -183,6 +183,10 @@ func isPathCatalogItem(root, p string) bool {
 		return false
 	}
 
+	if isMetaPath(p) {
+		return false
+	}
+
 	return true
 }
 

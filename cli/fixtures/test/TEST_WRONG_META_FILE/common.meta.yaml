@@ -1,0 +1,7 @@
+---
+# this is not allowed
+__meta__:
+  secrets:
+    - name: bla
+
+notallowed: true

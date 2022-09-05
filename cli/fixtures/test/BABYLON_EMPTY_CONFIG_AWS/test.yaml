@@ -1,5 +1,5 @@
 ---
-#include /cli/fixtures/includes/include1.yaml
+#include ../../includes/include2.meta.yml
 purpose: test
 
 #########################################

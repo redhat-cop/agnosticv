@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -226,6 +227,8 @@ func customStrategyMerge(final map[string]any, source map[string]any, strategy M
 	return nil
 }
 
+var ErrorIncorrectMeta = errors.New("incorrect meta file")
+
 func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Include, error) {
 	logDebug.Printf("mergeVars(%v)", p)
 
@@ -265,6 +268,22 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 				". Error is in",
 				mergeList[i].path)
 			return map[string]any{}, []Include{}, err
+		}
+
+		if isMetaPath(mergeList[i].path) {
+			// Check if meta file has the __meta__ variable
+			if _, ok := current["__meta__"]; ok {
+				if len(current) > 1 {
+					logErr.Println("Meta file", mergeList[i].path,
+						"has __meta__ key and other variables. Please place only __meta__ in a meta file.")
+					return map[string]any{}, []Include{}, ErrorIncorrectMeta
+				}
+			} else {
+				// Inject content into the __meta__ key
+				newCurrent := make(map[string]any)
+				newCurrent["__meta__"] = current
+				current = newCurrent
+			}
 		}
 
 		logDebug.Println("(mergelist) append", mergeList[i])

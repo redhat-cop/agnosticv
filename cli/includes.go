@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 // Include represent the include file
@@ -19,6 +20,9 @@ type Include struct {
 // ErrorIncludeLoop happens in case of an infinite loop between included files
 var ErrorIncludeLoop = errors.New("include loop")
 
+// ErrorEmptyPath happens when a path is an empty string
+var ErrorEmptyPath = errors.New("empty path")
+
 // ErrorIncludeOutOfChroot happens when an include is not in the inside the agnosticV repo.
 var ErrorIncludeOutOfChroot = errors.New("include path is out of chroot")
 
@@ -29,6 +33,43 @@ func containsPath(l []Include, p string) bool {
         }
     }
     return false
+}
+
+// getMetaPath builds the path of the meta by prepending '.meta' to
+// the original extension of the included file.
+//
+// dev.yaml => dev.meta.yaml
+// dev.yml => dev.meta.yml
+func getMetaPath(path string) (string, error) {
+	if path == "" {
+		return "", ErrorEmptyPath
+	}
+
+	extension := filepath.Ext(path)
+	meta := strings.TrimSuffix(path, extension) + ".meta"
+
+	// Detect which extension to use based on file existence
+	if fileExists(meta + ".yml") {
+		return meta + ".yml", nil
+	}
+
+	if fileExists(meta + ".yaml") {
+		return meta + ".yaml", nil
+	}
+
+	// Return same extension as file
+	return meta + extension, nil
+}
+
+func isMetaPath(path string) bool {
+	ext := filepath.Ext(path)
+	if ext == ".yml" || ext == ".yaml" {
+		if filepath.Ext(strings.TrimSuffix(path, ext)) == ".meta" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // function getMergeList return the merge list for a catalog items
@@ -114,6 +155,17 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 	done[path] = true
 
 	result := []Include{}
+
+	// Check if path has a meta file
+	if meta, err := getMetaPath(path); err == nil && fileExists(meta) {
+		innerIncludes, innerDone, err := parseAllIncludes(meta, done)
+		done = innerDone
+		if err != nil {
+			return []Include{}, done, err
+		}
+		innerIncludes = append(innerIncludes, Include{path: meta})
+		result = append(innerIncludes, result...)
+	}
 
 	file, err := os.Open(path)
 	defer file.Close()

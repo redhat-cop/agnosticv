@@ -4,7 +4,7 @@
 
 == Description
 
-Agnosticv is a generic way of organizing and merging YAML files in order to manage a Catalog.
+Agnosticv is a generic way of organizing and merging YAML files to manage a Catalog.
 
 Currently the project is composed of:
 
@@ -37,8 +37,8 @@ Download the binary for your architecture (linux, mac, windows, ..) from link:ht
 
 The CLI `agnosticv` has the following capabilities:
 
-- list all the catalog items present in a directory (or local directory)
-- print the vars of an item of the catalog
+- list all the catalog items present in a directory
+- merge and print the vars of an item of the catalog
 
 
 .Usage
@@ -110,6 +110,7 @@ cli $ ./agnosticv --merge fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
 # MERGED:
 # fixtures/common.yaml
 # fixtures/test/account.yaml
+# fixtures/test/account.meta.yaml
 # fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml
 # fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
 __meta__:
@@ -136,35 +137,34 @@ go build -o agnosticv
 
 == File naming convention
 
-Some files are auto-included when merging. The following names are valid common yaml files:
+=== Nomenclature ===
+
+* _Catalog item_, or _Leaf_: a file considered a catalog item. It appears when listing an agnosticv repository with `agnosticv --list`. To print the content of a catalog item, you run `agnosticv --merge PATH`. That merges common files, meta files, included files, and finally, the leaf to produce the catalog item.
+* _Common file_:  a file that is automatically included in the merge list. Ex: `common.yaml`
+* _Included file_: any file that is included in the merge list using the `#include PATH` feature
+* _Meta file_: Any file ending with `.meta.yml` or `.meta.yaml`. It contains the value of the `__meta__` dictionary.
+
+=== Common files ===
+
+Some files are automatically included in the merge list to produce the final catalog item. The following names are valid common YAML files:
 
 - `common.yaml`
 - `common.yml`
 - `account.yaml`
 - `account.yml`
 
-The "leaf" files, or items, are just all the rest of the yaml files, having one of these extensions:
+They can be placed at any level in the agnosticv repository.
 
-- yml
-- yaml
+=== Includes ===
 
-You can list all catalog items in a directory by using the `--list` parameter.
+Files included in the merge list using the `#include PATH` feature. See the dedicated section below.
 
-=== Files ignored ===
+Usually, we place them in an `includes/` directory at the top of the agnosticv repository.
 
-* Any dotfile is ignored. Ex: `.git`
-* Any directory `includes` is ignored. The files in those directory are not considered as catalog items.
-* Any file containing:
-+
-----
-#agnosticv catalog_item false
-----
-+
-is ignored.
-
-=== `#include` merge feature ===
+==== `#include` merge feature ====
 
 * syntax:  `#include FILENAME`
+* where: In any file
 * identation is ignored
 +
 [source,yaml]
@@ -180,9 +180,12 @@ And:
 ----
 +
 are the same.
-* `FILENAME` is added to the merge list right **before** current file regardless of the position of `#include` in the file. In other words, current file vars take precedence over merged files.
-* if `FILENAME` starts with `/` then path is absolute (to the AgnosticV repo)
-** if not, path is relative to current file
+* `FILENAME` is added to the merge list right **before** current file regardless of the position of `#include` in the file. In other words, current file vars take precedence over included files vars.
+** That's also why you should put all your includes at the top of the file.
+* if `FILENAME` starts with `/` then path is absolute to the AgnosticV repo.
+** if not, the path is relative to the current file
+
+===== Example =====
 
 [source,yaml]
 .`gpte/OCP4_WORKSHOP/prod.yaml`
@@ -230,13 +233,75 @@ The merge list will be:
 . `/includes/file2.yaml`
 . `/gpte/OCP4_WORKSHOP/prod.yaml`
 
+=== Meta files ===
+
+For any common file, leaf file, or included file, you can create an associated meta file to be automatically included.
+The meta file can contain the value of the  `\\__meta__` dictionary. It is convenient to separate that special dictionary from the other variables.
+
+For example, the following files are valid meta files:
+
+* `common.meta.yml` meta file for `common.yml`
+* `account.meta.yml` meta file for `account.yml`
+* `dev.meta.yml` meta file for `dev.yml`
+
+WARNING: you can only put the content of the `\\__meta__` variable in a meta file.
+
+.example1: content of meta file
+[source,yaml]
+----
+__meta__:
+  secrets:
+    - name: mysecret
+----
+
+.example2: with the content of `\\__meta__` directly, same as example1
+[source,yaml]
+----
+secrets:
+  - name: mysecret
+----
+
+.example3: *wrong* meta file - This will fail
+[source,yaml]
+----
+__meta__:
+  secrets:
+    - name: mysecret
+
+another_var: value <1>
+----
+<1> other variables than `\\__meta__` are not allowed
+
+=== Leaf files ===
+
+The "leaf" files, or catalog items, are just the rest of the YAML files, having one of these extensions:
+
+- yml
+- yaml
+
+You can list all catalog items in a directory by using `--list` parameter: `agnosticv --list`
+
+==== Files ignored ====
+
+* Any dotfile is ignored. Ex: `.git`
+* Any directory named `includes` is reserved to includes. The files in those directories are never considered as catalog items.
+* Any file containing:
++
+----
+#agnosticv catalog_item false
+----
++
+is ignored. It is not considered a catalog item.
+
+
+
 == Merging strategies
 
 === Default ===
 
 When it comes to merging variables, there are different possible strategies.
 
-The default is the following
+The default is the following:
 
 |========================
 | What | Dictionaries | Lists | Strings / Numbers
@@ -257,9 +322,9 @@ Same behavior as if you were using ansible{nbsp}extra{nbsp}vars
 
 === Custom merge strategies ===
 
-It is possible to extend agnosticV and define what merge strategy to use on what variable or part of dictionary variable.
+It is possible to extend agnosticV and define the merge strategy to use on what variable or part of a dictionary variable.
 
-To do that, you can define the custom merge strategies in any schema in the `.schemas` directory. Just use the **`x-merge`** keyword at the beginning of the schema. `x-merge` is a list of strategy. Each strategy defines a `path` and a `strategy` name to apply on that path.
+To do that, you can define the custom merge strategies in any schema in the `.schemas` directory. Just use the **`x-merge`** keyword at the beginning of the schema. `x-merge` is a list of strategies. Each strategy defines a `path` and a `strategy` name to apply to that path. `path` is a link:https://www.rfc-editor.org/rfc/rfc6901[JSON Pointer]. For the list of strategies, see section below.
 
 [source,yaml]
 .`.schema/schema.yaml`  example of `x-merge` custom strategy
@@ -270,7 +335,7 @@ x-merge:
     strategy: overwrite # <2>
 properties:
 ----
-<1> The path of the variable or key of dictionnary to apply the custom strategy against.
+<1> The path of the variable or key of dictionnary, as a link:https://www.rfc-editor.org/rfc/rfc6901[JSON Pointer], to apply the custom strategy against.
 <2> When merging, agnosticv will overwrite the content of `\\__meta__.access_control` instead of merging it.
 
 For example, with the schema above and following merge list:
