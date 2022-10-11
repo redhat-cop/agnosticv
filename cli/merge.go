@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"time"
 
 	yamljson "github.com/ghodss/yaml"
 	"github.com/go-openapi/jsonpointer"
@@ -52,6 +53,38 @@ func Set(dst map[string]any, path string, src map[string]any) error {
 		return nil
 	}
 
+	pointer, err := jsonpointer.New(path)
+	if err != nil {
+		return err
+	}
+
+	keys := strings.Split(path, "/")
+	if len(keys) > 1 {
+		// get rid of the first key that is ""
+		if keys[0] == "" {
+			keys = keys[1:]
+		}
+		// Get rid of last key too: we don't want to initialize the last element
+		keys = keys[0:len(keys) - 1]
+	}
+
+	logDebug.Printf("(Set) keys %v", keys)
+
+	// Init the map using all the keys except the last one
+	initMap(dst, keys)
+
+	logDebug.Printf("(Set) map init result: %v", dst)
+
+	if _, err := pointer.Set(dst, srcObj); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetRelative copy the value of into dst to a specific path
+// dst is the entire map
+// src is only the element to copy into dst.path
+func SetRelative(dst map[string]any, path string, srcObj map[string]any) error {
 	pointer, err := jsonpointer.New(path)
 	if err != nil {
 		return err
@@ -245,7 +278,6 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 		rootFlag = findRoot(p)
 	}
 
-
 	mergeList, err := getMergeList(p)
 	if err != nil {
 		return map[string]any{}, []Include{}, err
@@ -342,6 +374,17 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 	// Override final with merged vars
 	for k,v := range merged {
 		final[k] = v
+	}
+
+	// Add Git info to metadata
+	if isRepo(p) {
+		commit := GetCommit(p)
+		mergeGitInfo := map[string]any{}
+		mergeGitInfo["author"] = fmt.Sprintf("%s <%s>", commit.Author.Name, commit.Author.Email)
+		mergeGitInfo["when"] = commit.Author.When.UTC().Format(time.RFC3339)
+		mergeGitInfo["hash"] = commit.Hash.String()
+		mergeGitInfo["message"] = strings.SplitN(commit.Message, "\n", 10)[0]
+		SetRelative(final, "/__meta__/merge_info/git", mergeGitInfo)
 	}
 
 	return final, mergeList, nil
