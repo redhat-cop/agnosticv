@@ -93,7 +93,7 @@ Examples:
 By default, it's empty, and the scope of the git repository is used, so you should not
 need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.`)
 	flag.BoolVar(&versionFlag, "version", false, "Print build version.")
-	flag.BoolVar(&gitFlag, "git", true, "Perform operations at the git level to gather and inject information into the merged vars like 'last_update'. Git operations are slow so this option is automatically disabled for listing.")
+	flag.BoolVar(&gitFlag, "git", true, "Perform git operations to gather and inject information into the merged vars like 'last_update'. Git operations are slow so this option is automatically disabled for listing.")
 
 	flag.Parse()
 

@@ -3,16 +3,17 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/go-openapi/jsonpointer"
+	"github.com/imdario/mergo"
+	"github.com/mohae/deepcopy"
 	"io/ioutil"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
-
+	"github.com/go-git/go-git/v5/plumbing/object"
 	yamljson "github.com/ghodss/yaml"
-	"github.com/go-openapi/jsonpointer"
-	"github.com/imdario/mergo"
-	"github.com/mohae/deepcopy"
 )
 
 // MergeStrategy type to define custom merge strategies.
@@ -378,15 +379,28 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 
 	// Add Git info to metadata
 	if gitFlag && isRepo(p) {
-		commit := findMostRecentCommit(p, extendMergeListWithRelated(p, mergeList))
-		mergeGitInfo := map[string]any{}
-		mergeGitInfo["author"] = fmt.Sprintf("%s <%s>", commit.Author.Name, commit.Author.Email)
-		mergeGitInfo["committer"] = fmt.Sprintf("%s <%s>", commit.Committer.Name, commit.Committer.Email)
-		mergeGitInfo["when_author"] = commit.Author.When.UTC().Format(time.RFC3339)
-		mergeGitInfo["when_committer"] = commit.Committer.When.UTC().Format(time.RFC3339)
-		mergeGitInfo["hash"] = commit.Hash.String()
-		mergeGitInfo["message"] = strings.SplitN(commit.Message, "\n", 10)[0]
-		SetRelative(final, "/__meta__/last_update/git", mergeGitInfo)
+
+		var commit *object.Commit
+		_, err := exec.LookPath("git")
+
+		if err != nil {
+			// If git is not in PATH, use pure-go
+			commit = findMostRecentCommit(p, extendMergeListWithRelated(p, mergeList))
+		} else {
+			// Else use git command
+			commit = findMostRecentCommitCmd(p, extendMergeListWithRelated(p, mergeList))
+		}
+
+		if commit != nil {
+			mergeGitInfo := map[string]any{}
+			mergeGitInfo["author"] = fmt.Sprintf("%s <%s>", commit.Author.Name, commit.Author.Email)
+			mergeGitInfo["committer"] = fmt.Sprintf("%s <%s>", commit.Committer.Name, commit.Committer.Email)
+			mergeGitInfo["when_author"] = commit.Author.When.UTC().Format(time.RFC3339)
+			mergeGitInfo["when_committer"] = commit.Committer.When.UTC().Format(time.RFC3339)
+			mergeGitInfo["hash"] = commit.Hash.String()
+			mergeGitInfo["message"] = strings.SplitN(commit.Message, "\n", 10)[0]
+			SetRelative(final, "/__meta__/last_update/git", mergeGitInfo)
+		}
 	}
 
 	return final, mergeList, nil

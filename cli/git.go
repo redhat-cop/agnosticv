@@ -2,10 +2,13 @@ package main
 
 import (
 	"io"
+	"os/exec"
 	"path/filepath"
+	"bytes"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 
@@ -47,5 +50,41 @@ func findMostRecentCommit(p string, related []Include) *object.Commit {
 		// Stop at first found, return EOF
 		return io.EOF
 	})
+
+	return commit
+}
+
+func findMostRecentCommitCmd(p string, related []Include) *object.Commit {
+	// Use the git command
+	// see https://github.com/go-git/go-git/issues/137
+	args := []string{
+		"log",
+		"--max-count=1",
+		"--pretty=format:%H",
+		"--",
+		p,
+	}
+
+	for _, r := range related {
+		args = append(args, r.path)
+	}
+
+	cmd := exec.Command("git", args...)
+	logDebug.Println(cmd)
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+	if err != nil {
+		logErr.Fatal(err)
+	}
+
+	repo, err := git.PlainOpenWithOptions(p, &git.PlainOpenOptions{DetectDotGit: true})
+	if err != nil {
+		logErr.Fatal("Can't open repository", p, err)
+	}
+
+	commit, err := repo.CommitObject(plumbing.NewHash(out.String()))
 	return commit
 }
