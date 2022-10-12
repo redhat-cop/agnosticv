@@ -4,16 +4,17 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/jmespath/go-jmespath"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
-	yaml "gopkg.in/yaml.v2"
 	"runtime/pprof"
+	"strings"
+
+	"github.com/jmespath/go-jmespath"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Logs
@@ -505,7 +506,7 @@ func main() {
 
 	parseFlags()
 	if *cpuprofile != "" {
-        f, err := os.Create(*cpuprofile)
+		f, err := os.Create(*cpuprofile)
         if err != nil {
             log.Fatal(err)
         }
