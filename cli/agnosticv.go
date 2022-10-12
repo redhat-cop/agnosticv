@@ -10,7 +10,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime/pprof"
 	"strings"
 
 	"github.com/jmespath/go-jmespath"
@@ -35,9 +34,6 @@ var rootFlag string
 var validateFlag bool
 var versionFlag bool
 var gitFlag bool
-
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-
 
 // Build info
 var Version = "development"
@@ -505,14 +501,6 @@ func nextCommonFile(position string) string {
 func main() {
 
 	parseFlags()
-	if *cpuprofile != "" {
-		f, err := os.Create(*cpuprofile)
-        if err != nil {
-            log.Fatal(err)
-        }
-        pprof.StartCPUProfile(f)
-        defer pprof.StopCPUProfile()
-    }
 	initLoggers()
 	initMergeStrategies()
 
