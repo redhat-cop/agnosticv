@@ -1,6 +1,9 @@
 package main
 
 import (
+	"io"
+	"path/filepath"
+
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 )
@@ -11,22 +14,38 @@ func isRepo(path string) bool {
 	return err == nil
 }
 
-func GetCommit(p string) (*object.Commit) {
 
+func findMostRecentCommit(p string, related []Include) *object.Commit {
 	repo, err := git.PlainOpenWithOptions(p, &git.PlainOpenOptions{DetectDotGit: true})
 	if err != nil {
 		logErr.Fatal("Can't open repository", p, err)
 	}
 
-	ref, err := repo.Head()
-	if err != nil {
-		logErr.Fatal("Can't read HEAD", err)
-	}
+	wt, _ := repo.Worktree()
 
-	commit, err := repo.CommitObject(ref.Hash())
-	if err != nil {
-		logErr.Fatal("Can't read log of", ref.Hash())
-	}
+	cIter, err := repo.Log(
+		&git.LogOptions{
+			Order: git.LogOrderCommitterTime,
+			All: false,
+			PathFilter: func(path string) bool {
+				if filepath.Join(wt.Filesystem.Root(), path) == abs(p) {
+					return true
+				}
+				for _, f := range related {
+					if filepath.Join(wt.Filesystem.Root(), path) == abs(f.path) {
+						return true
+					}
+				}
+				return false
+			},
+		},
+	)
 
+	var commit *object.Commit
+	cIter.ForEach(func(o *object.Commit) error {
+		commit = o
+		// Stop at first found, return EOF
+		return io.EOF
+	})
 	return commit
 }

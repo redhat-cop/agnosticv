@@ -17,7 +17,8 @@ Currently the project is composed of:
 - Support for includes.
 - Validate variables using  link:https://www.openapis.org/[OpenAPI v3] schemas. Just place schemas in a `.schemas` directory at the top-level of the agnosticv repository.
 - Customize merge strategies
-- Filter catalog items using JMESPath expressions (`--has` flag)
+- Inject information about last change (commit, author, date) when merging the vars of a catalog item
+- When listing catalog items, filter catalog items using JMESPath expressions (`--has` flag)
 
 === Example of agnosticv repositories
 

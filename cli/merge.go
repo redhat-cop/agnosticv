@@ -377,14 +377,16 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 	}
 
 	// Add Git info to metadata
-	if isRepo(p) {
-		commit := GetCommit(p)
+	if gitFlag && isRepo(p) {
+		commit := findMostRecentCommit(p, extendMergeListWithRelated(p, mergeList))
 		mergeGitInfo := map[string]any{}
 		mergeGitInfo["author"] = fmt.Sprintf("%s <%s>", commit.Author.Name, commit.Author.Email)
-		mergeGitInfo["when"] = commit.Author.When.UTC().Format(time.RFC3339)
+		mergeGitInfo["committer"] = fmt.Sprintf("%s <%s>", commit.Committer.Name, commit.Committer.Email)
+		mergeGitInfo["when_author"] = commit.Author.When.UTC().Format(time.RFC3339)
+		mergeGitInfo["when_committer"] = commit.Committer.When.UTC().Format(time.RFC3339)
 		mergeGitInfo["hash"] = commit.Hash.String()
 		mergeGitInfo["message"] = strings.SplitN(commit.Message, "\n", 10)[0]
-		SetRelative(final, "/__meta__/merge_info/git", mergeGitInfo)
+		SetRelative(final, "/__meta__/last_update/git", mergeGitInfo)
 	}
 
 	return final, mergeList, nil
