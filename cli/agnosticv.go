@@ -511,7 +511,9 @@ func main() {
 		logErr.Fatal(errWorkDir)
 	}
 
-	initSchemaList()
+	if len(schemas) == 0 {
+		initSchemaList()
+	}
 
 	if listFlag {
 		catalogItems, err := findCatalogItems(workDir, hasFlags, relatedFlags, orRelatedFlags)

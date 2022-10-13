@@ -78,7 +78,6 @@ func getSchemaList() ([]Schema, error) {
 		schema := new(AgnosticvSchema)
 
 		if err := jsonyaml.Unmarshal(content, schema); err != nil {
-			logErr.Println(err)
 			return err
 		}
 
@@ -86,6 +85,50 @@ func getSchemaList() ([]Schema, error) {
 		if err != nil {
 			return err
 		}
+
+		// 3. merge Default schema if __meta__ is found
+
+		schemaMap := make(map[string]any)
+		if err := jsonyaml.Unmarshal(content, &schemaMap); err != nil {
+			return err
+		}
+
+		if found, _, _, err := Get(schemaMap, "/properties/__meta__"); err == nil && found {
+			defaultSchemaMap := make(map[string]any)
+			if err := jsonyaml.Unmarshal([]byte(defaultSchema), &defaultSchemaMap); err != nil {
+				return err
+			}
+
+			// Merge default scema into current schema
+
+			if err := customStrategyMerge(
+				schemaMap,
+				defaultSchemaMap,
+				MergeStrategy{
+					Path: "/properties/__meta__",
+					Strategy: "merge",
+				},
+			); err != nil {
+				logErr.Println("Error merging default schema")
+				return err
+			}
+
+			// rewrite schema and data
+
+			if content, err = jsonyaml.Marshal(schemaMap); err != nil {
+				return err
+			}
+
+			if err := jsonyaml.Unmarshal(content, schema); err != nil {
+				return err
+			}
+
+			if data, err = jsonyaml.YAMLToJSON(content); err != nil {
+				return err
+			}
+		}
+
+		// Add schema
 
 		result = append(result, Schema{
 			path: pAbs,
@@ -98,6 +141,26 @@ func getSchemaList() ([]Schema, error) {
 
 	return result, err
 }
+
+// DefaultSchema is the OpenAPI schema for built-in properties.
+// If a schema has __meta__, this default schema will be merged into it.
+var defaultSchema string = `
+type: object
+properties:
+  __meta__:
+    type: object
+    properties:
+      last_update:
+        description: >-
+          Information about last update, injected by agnosticv CLI.
+        type: object
+        additionalProperties: false
+        properties:
+          git:
+            description: >-
+              Information about last update from git, injected by agnosticv CLI.
+            type: object
+`
 
 func validateAgainstSchemas(path string, data map[string]any) error {
 	logDebug.Println("len(schemas) =", len(schemas))
