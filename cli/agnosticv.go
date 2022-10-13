@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/jmespath/go-jmespath"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,6 +11,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/jmespath/go-jmespath"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -32,6 +33,7 @@ var debugFlag bool
 var rootFlag string
 var validateFlag bool
 var versionFlag bool
+var gitFlag bool
 
 // Build info
 var Version = "development"
@@ -88,6 +90,7 @@ Examples:
 By default, it's empty, and the scope of the git repository is used, so you should not
 need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.`)
 	flag.BoolVar(&versionFlag, "version", false, "Print build version.")
+	flag.BoolVar(&gitFlag, "git", true, "Perform git operations to gather and inject information into the merged vars like 'last_update'. Git operations are slow so this option is automatically disabled for listing.")
 
 	flag.Parse()
 
@@ -128,6 +131,11 @@ need this parameter unless your files are not in a git repository, or if you wan
 		}
 
 		rootFlag = abs(rootFlag)
+	}
+
+	// Do not perform git operations when listing
+	if listFlag {
+		gitFlag = false
 	}
 }
 
@@ -225,6 +233,15 @@ func isCatalogItem(root, p string) bool {
 	return true
 }
 
+func extendMergeListWithRelated(pAbs string, mergeList []Include) []Include {
+			// Related == merge list + description.{adoc,html}
+			return append(
+				mergeList,
+				Include{path: filepath.Join(filepath.Dir(pAbs),"description.adoc")},
+				Include{path: filepath.Join(filepath.Dir(pAbs),"description.html")},
+			)
+}
+
 func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, orRelatedFlags []string) ([]string, error) {
 	logDebug.Println("findCatalogItems(", workdir, hasFlags, ")")
 	result := []string{}
@@ -245,6 +262,7 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 			return nil
 		}
 
+		// TODO: create a CatalogItem type that will use absolute path and make the validations isCatalogItem()
 		pAbs, err := filepath.Abs(p)
 		if err == nil {
 			if !isCatalogItem(rootFlag, pAbs) {
@@ -284,13 +302,7 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 
 		if len(relatedFlags) > 0 || len(orRelatedFlags) > 0 {
 			mergeList, err := getMergeList(pAbs)
-
-			// Related == merge list + description.{adoc,html}
-			related := append(
-				mergeList,
-				Include{path: filepath.Join(filepath.Dir(pAbs),"description.adoc")},
-				Include{path: filepath.Join(filepath.Dir(pAbs),"description.html")},
-			)
+			related := extendMergeListWithRelated(pAbs, mergeList)
 
 			logDebug.Println("getMergeList(", pAbs, ") =", mergeList)
 			logDebug.Println("related =", related)
@@ -499,7 +511,9 @@ func main() {
 		logErr.Fatal(errWorkDir)
 	}
 
-	initSchemaList()
+	if len(schemas) == 0 {
+		initSchemaList()
+	}
 
 	if listFlag {
 		catalogItems, err := findCatalogItems(workDir, hasFlags, relatedFlags, orRelatedFlags)

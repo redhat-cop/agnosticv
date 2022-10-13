@@ -3,15 +3,17 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"path/filepath"
-	"reflect"
-	"strings"
-
-	yamljson "github.com/ghodss/yaml"
 	"github.com/go-openapi/jsonpointer"
 	"github.com/imdario/mergo"
 	"github.com/mohae/deepcopy"
+	"io/ioutil"
+	"os/exec"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"time"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	yamljson "github.com/ghodss/yaml"
 )
 
 // MergeStrategy type to define custom merge strategies.
@@ -52,6 +54,38 @@ func Set(dst map[string]any, path string, src map[string]any) error {
 		return nil
 	}
 
+	pointer, err := jsonpointer.New(path)
+	if err != nil {
+		return err
+	}
+
+	keys := strings.Split(path, "/")
+	if len(keys) > 1 {
+		// get rid of the first key that is ""
+		if keys[0] == "" {
+			keys = keys[1:]
+		}
+		// Get rid of last key too: we don't want to initialize the last element
+		keys = keys[0:len(keys) - 1]
+	}
+
+	logDebug.Printf("(Set) keys %v", keys)
+
+	// Init the map using all the keys except the last one
+	initMap(dst, keys)
+
+	logDebug.Printf("(Set) map init result: %v", dst)
+
+	if _, err := pointer.Set(dst, srcObj); err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetRelative copy the value of into dst to a specific path
+// dst is the entire map
+// src is only the element to copy into dst.path
+func SetRelative(dst map[string]any, path string, srcObj map[string]any) error {
 	pointer, err := jsonpointer.New(path)
 	if err != nil {
 		return err
@@ -245,7 +279,6 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 		rootFlag = findRoot(p)
 	}
 
-
 	mergeList, err := getMergeList(p)
 	if err != nil {
 		return map[string]any{}, []Include{}, err
@@ -342,6 +375,32 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 	// Override final with merged vars
 	for k,v := range merged {
 		final[k] = v
+	}
+
+	// Add Git info to metadata
+	if gitFlag && isRepo(p) {
+
+		var commit *object.Commit
+		_, err := exec.LookPath("git")
+
+		if err != nil {
+			// If git is not in PATH, use pure-go
+			commit = findMostRecentCommit(p, extendMergeListWithRelated(p, mergeList))
+		} else {
+			// Else use git command
+			commit = findMostRecentCommitCmd(p, extendMergeListWithRelated(p, mergeList))
+		}
+
+		if commit != nil {
+			mergeGitInfo := map[string]any{}
+			mergeGitInfo["author"] = fmt.Sprintf("%s <%s>", commit.Author.Name, commit.Author.Email)
+			mergeGitInfo["committer"] = fmt.Sprintf("%s <%s>", commit.Committer.Name, commit.Committer.Email)
+			mergeGitInfo["when_author"] = commit.Author.When.UTC().Format(time.RFC3339)
+			mergeGitInfo["when_committer"] = commit.Committer.When.UTC().Format(time.RFC3339)
+			mergeGitInfo["hash"] = commit.Hash.String()
+			mergeGitInfo["message"] = strings.SplitN(commit.Message, "\n", 10)[0]
+			SetRelative(final, "/__meta__/last_update/git", mergeGitInfo)
+		}
 	}
 
 	return final, mergeList, nil

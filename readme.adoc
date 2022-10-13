@@ -17,7 +17,8 @@ Currently the project is composed of:
 - Support for includes.
 - Validate variables using  link:https://www.openapis.org/[OpenAPI v3] schemas. Just place schemas in a `.schemas` directory at the top-level of the agnosticv repository.
 - Customize merge strategies
-- Filter catalog items using JMESPath expressions (`--has` flag)
+- Inject information about last change (commit, author, date) when merging the vars of a catalog item
+- When listing catalog items, filter catalog items using JMESPath expressions (`--has` flag)
 
 === Example of agnosticv repositories
 
@@ -46,6 +47,8 @@ The CLI `agnosticv` has the following capabilities:
 Usage of agnosticv:
   -debug
     	Debug mode
+  -git
+    	Perform git operations to gather and inject information into the merged vars like 'last_update'. Git operations are slow so this option is automatically disabled for listing. (default true)
   -has value
     	Use with --list only. Filter catalog items using a JMESPath expression.
     	Can be used several times (act like AND).
@@ -85,6 +88,8 @@ Usage of agnosticv:
     	need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.
   -validate
     	Validate variables against schemas present in .schemas directory. (default true)
+  -version
+    	Print build version.
 ----
 
 .Using local directory
