@@ -92,12 +92,12 @@ func getMergeList(path string) ([]Include, error) {
 	return result, nil
 }
 
-func printPaths(mergeList []Include) {
+func printPaths(mergeList []Include, workdir string) {
 	if len(mergeList) > 0 {
 		fmt.Println("# MERGED:")
 	}
 	for i := 0; i < len(mergeList); i = i + 1 {
-		if relativePath, err := filepath.Rel(workDir, mergeList[i].path) ; err == nil && len(relativePath) < len(mergeList[i].path) {
+		if relativePath, err := filepath.Rel(workdir, mergeList[i].path) ; err == nil && len(relativePath) < len(mergeList[i].path) {
 			fmt.Printf("#   %s\n", relativePath)
 		} else {
 			fmt.Printf("#   %s\n", mergeList[i].path)
