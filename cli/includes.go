@@ -148,7 +148,7 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 	}
 
 	if val, ok := done[path]; ok && val {
-		logErr.Println(path, "include loop detected")
+		logErr.Println(path, "is included more than once")
 		return []Include{}, done, ErrorIncludeLoop
 	}
 
