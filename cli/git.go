@@ -48,11 +48,13 @@ func findMostRecentCommit(p string, related []Include) *object.Commit {
 	}
 
 	var commit *object.Commit
-	cIter.ForEach(func(o *object.Commit) error {
+	if err := cIter.ForEach(func(o *object.Commit) error {
 		commit = o
 		// Stop at first found, return EOF
 		return io.EOF
-	})
+	}); err != io.EOF && err != nil {
+		logErr.Fatalf("Error while walking commits: %v", err)
+	}
 
 	return commit
 }

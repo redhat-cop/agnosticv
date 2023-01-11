@@ -398,7 +398,9 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 			mergeGitInfo["when_committer"] = commit.Committer.When.UTC().Format(time.RFC3339)
 			mergeGitInfo["hash"] = commit.Hash.String()
 			mergeGitInfo["message"] = strings.SplitN(commit.Message, "\n", 10)[0]
-			SetRelative(final, "/__meta__/last_update/git", mergeGitInfo)
+			if err := SetRelative(final, "/__meta__/last_update/git", mergeGitInfo); err != nil {
+				logErr.Fatalf("Error SetRelative: %v", err)
+			}
 		}
 	}
 
