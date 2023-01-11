@@ -1,8 +1,8 @@
 package main
 
 import (
-	"io/ioutil"
 	"path/filepath"
+	"os"
 	"log"
 
 	yamljson "github.com/ghodss/yaml"
@@ -24,7 +24,7 @@ func getConf(root string) Config {
 
 	if !fileExists(path) { return c }
 
-	yamlFile, err := ioutil.ReadFile(path)
+	yamlFile, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatalf("Can't read config file: #%v", err)
 	}

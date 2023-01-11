@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -162,7 +162,7 @@ need this parameter unless your files are not in a git repository, or if you wan
 func initLoggers() {
 	logErr = log.New(os.Stderr, "!!! ", log.LstdFlags)
 	logOut = log.New(os.Stdout, "    ", log.LstdFlags)
-	logDebug = log.New(ioutil.Discard, "(d) ", log.LstdFlags)
+	logDebug = log.New(io.Discard, "(d) ", log.LstdFlags)
 	logReport = log.New(os.Stdout, "+++ ", log.LstdFlags)
 }
 

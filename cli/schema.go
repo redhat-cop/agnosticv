@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/getkin/kin-openapi/jsoninfo"
 	"github.com/getkin/kin-openapi/openapi3"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -68,7 +67,7 @@ func getSchemaList() ([]Schema, error) {
 
 		pAbs := abs(p)
 
-		content, err := ioutil.ReadFile(pAbs)
+		content, err := os.ReadFile(pAbs)
 		if err != nil {
 			return err
 		}

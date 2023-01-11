@@ -6,7 +6,7 @@ import (
 	"github.com/go-openapi/jsonpointer"
 	"github.com/imdario/mergo"
 	"github.com/mohae/deepcopy"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
@@ -289,7 +289,7 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 	for i := 0 ; i < len(mergeList); i = i + 1 {
 		current := make(map[string]any)
 
-		content, err := ioutil.ReadFile(mergeList[i].path)
+		content, err := os.ReadFile(mergeList[i].path)
 		if err != nil {
 			return map[string]any{}, []Include{}, err
 		}

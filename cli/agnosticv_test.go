@@ -3,7 +3,7 @@ package main
 import (
 	"strings"
 	"testing"
-	"io/ioutil"
+	"io"
 	"log"
 )
 
@@ -423,7 +423,7 @@ func TestInclude(t *testing.T) {
 		t.Error("value 'from_include1' not found")
 	}
 
-	logErr = log.New(ioutil.Discard, "!!! ", log.LstdFlags)
+	logErr = log.New(io.Discard, "!!! ", log.LstdFlags)
 	_, _, err = mergeVars("fixtures/gpte/OCP_CLIENTVM/.testloop.yaml", mergeStrategies)
 
 	if err != ErrorIncludeLoop {
@@ -581,7 +581,7 @@ func TestIsMetaPath(t *testing.T) {
 
 func TestWrongMetaFile(t *testing.T) {
 	rootFlag = abs("incorrect-fixtures")
-	logErr = log.New(ioutil.Discard, "!!! ", log.LstdFlags)
+	logErr = log.New(io.Discard, "!!! ", log.LstdFlags)
 
 	_, _, err := mergeVars("incorrect-fixtures/test/TEST_WRONG_META_FILE/dev.yaml", mergeStrategies)
 
