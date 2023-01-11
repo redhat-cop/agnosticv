@@ -168,10 +168,10 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 	}
 
 	file, err := os.Open(path)
-	defer file.Close()
 	if err != nil {
 		return []Include{}, done, err
 	}
+	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 

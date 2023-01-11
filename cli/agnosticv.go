@@ -237,12 +237,12 @@ func isCatalogItem(root, p string) bool {
 		return false
 	}
 	file, err := os.Open(p)
-	defer file.Close()
 
 	if err != nil {
 		logErr.Printf("%v\n", err)
 		return false
 	}
+	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 
