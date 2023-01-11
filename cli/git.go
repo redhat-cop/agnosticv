@@ -43,6 +43,9 @@ func findMostRecentCommit(p string, related []Include) *object.Commit {
 			},
 		},
 	)
+	if err != nil {
+		logErr.Fatal("Can't read git log", p, err)
+	}
 
 	var commit *object.Commit
 	cIter.ForEach(func(o *object.Commit) error {
@@ -86,5 +89,8 @@ func findMostRecentCommitCmd(p string, related []Include) *object.Commit {
 	}
 
 	commit, err := repo.CommitObject(plumbing.NewHash(out.String()))
+	if err != nil {
+		logErr.Fatal(err)
+	}
 	return commit
 }
