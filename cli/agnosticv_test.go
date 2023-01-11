@@ -5,6 +5,7 @@ import (
 	"testing"
 	"io"
 	"log"
+	"os"
 )
 
 func BenchmarkParentDir(b *testing.B) {
@@ -587,5 +588,31 @@ func TestWrongMetaFile(t *testing.T) {
 
 	if err != ErrorIncorrectMeta {
 		t.Error("ErrorIncorrectMeta expected, got", err)
+	}
+}
+
+
+func TestFindRoot(t *testing.T) {
+	wd, _ := os.Getwd()
+
+	wd = abs(wd)
+	parent := parentDir(wd)
+
+	testCases := []struct{
+		path string
+		result string
+	}{
+		{
+			path: "fixtures",
+			result: parent,
+		},
+	}
+
+	for _, tc := range testCases {
+		result := findRoot(tc.path)
+
+		if result != tc.result {
+			t.Error("with", tc.path, ":", result, "!=", tc.result)
+		}
 	}
 }
