@@ -212,7 +212,7 @@ func customStrategyMerge(final map[string]any, source map[string]any, strategy M
 		// Map
 
 		if srcType != reflect.Map {
-			return fmt.Errorf("You can change merge strategy only for maps (dictionaries)")
+			return fmt.Errorf("you can change merge strategy only for maps")
 		}
 
 		var dstPtr any
