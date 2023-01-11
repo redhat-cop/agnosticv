@@ -18,12 +18,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  static-checks:
-    name: Static Checks Pull Request
+  build:
+    name: Build
     runs-on: ${{ matrix.os }}
     strategy:
-        matrix:
-            os: ["ubuntu-latest", "macOS-latest"]
+      matrix:
+        os: ["ubuntu-latest", "macOS-latest"]
 
     steps:
       - uses: actions/checkout@v3
@@ -41,6 +41,11 @@ jobs:
         run: go test -v ./...
         working-directory: cli
 
+  static-checks:
+    name: Static Checks
+    runs-on: ubuntu-latest
+
+    steps:
       - name: Vet
         run: go vet ./...
         working-directory: cli
