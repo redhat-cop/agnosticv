@@ -39,7 +39,6 @@ func initMap(m map[string]any, keys []string) {
 	m[keys[0]] = make(map[string]any)
 	next := m[keys[0]].(map[string]any)
 	initMap(next, keys[1:])
-	return
 }
 
 
