@@ -181,6 +181,7 @@ func BenchmarkMergeJSON(b *testing.B) {
 }
 
 func TestMerge(t *testing.T) {
+	initLoggers()
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
 	initSchemaList()
@@ -213,6 +214,11 @@ func TestMerge(t *testing.T) {
 	found, value, _, err = Get(merged, "/alist")
 	if !found || err != nil || len(value.([]any)) != 2 {
 		t.Error("/alist  should be merged from account.yaml, and dev.yaml, and thus of length 2")
+	}
+
+	found, value, _, err = Get(merged, "/noappend_dict/a")
+	if !found || err != nil || len(value.([]any)) != 1 {
+		t.Error("/noappend_list should be of length 1")
 	}
 
 	// Ensure includes work as expected in meta file

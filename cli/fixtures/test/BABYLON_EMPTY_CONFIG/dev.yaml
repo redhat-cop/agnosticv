@@ -11,6 +11,9 @@ adict:
 alist:
   - fromdev
 
+noappend_dict:
+  a:
+    - fromdev
 #########################################
 # Meta variables for admin host scripts #
 # ALL_agnosticv.sh                      #
