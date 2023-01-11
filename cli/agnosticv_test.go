@@ -242,6 +242,7 @@ func TestIsPathCatalogItem(t *testing.T) {
 
 func TestWalk(t *testing.T) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	testCases := []struct {
 		description string
 		hasFlags []string
@@ -329,6 +330,7 @@ func TestWalk(t *testing.T) {
 		}
 		if len(result) != tc.count {
 			t.Error(tc.description, len(result), tc.count)
+			t.Error(result, tc)
 		}
 	}
 }
@@ -431,6 +433,7 @@ func TestInclude(t *testing.T) {
 
 func TestSchemaValidationPatternFailed(t *testing.T) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	validateFlag = true
 	initSchemaList()
 
@@ -448,6 +451,7 @@ func TestSchemaValidationPatternFailed(t *testing.T) {
 
 func TestSchemaValidationOK(t *testing.T) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	validateFlag = true
 	initSchemaList()
 
@@ -466,6 +470,7 @@ func TestSchemaValidationOK(t *testing.T) {
 
 func TestGetMergeList(t *testing.T) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	validateFlag = true
 	initSchemaList()
 
@@ -482,6 +487,7 @@ func TestGetMergeList(t *testing.T) {
 
 func TestGetMetaPath(t *testing.T) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	validateFlag = true
 	initSchemaList()
 
@@ -534,6 +540,7 @@ func TestGetMetaPath(t *testing.T) {
 
 func TestIsMetaPath(t *testing.T) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	validateFlag = true
 	initSchemaList()
 

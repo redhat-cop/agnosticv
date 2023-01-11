@@ -15,10 +15,12 @@ Currently the project is composed of:
 
 - Merge YAML files automatically following a particular convention, see below.
 - Support for includes.
-- Validate variables using  link:https://www.openapis.org/[OpenAPI v3] schemas. Just place schemas in a `.schemas` directory at the top-level of the agnosticv repository.
-- Customize merge strategies
 - Inject information about last change (commit, author, date) when merging the vars of a catalog item
 - When listing catalog items, filter catalog items using JMESPath expressions (`--has` flag)
+- Configure custom policies or behavior, per repository:
+** Configure merge strategies
+** Validate variables using  link:https://www.openapis.org/[OpenAPI v3] schemas. Just place schemas in a `.schemas` directory at the top-level of the agnosticv repository.
+** Configuration file `/.agnosticv.yaml`
 
 === Example of agnosticv repositories
 
@@ -92,7 +94,7 @@ Usage of agnosticv:
     	Print build version.
 ----
 
-.Using local directory
+.List catalog items in local directory
 --------------
 cli $ ./agnosticv --list
 fixtures/gpte/OCP_CLIENTVM/dev.yaml
@@ -108,11 +110,11 @@ fixtures/test/BABYLON_EMPTY_CONFIG_OSP/prod.yaml
 fixtures/test/BABYLON_EMPTY_CONFIG_OSP/test.yaml
 --------------
 
-.Print the var of an item
+.Merge and print the vars of a catalog item
 --------------
 cli $ ./agnosticv --merge fixtures/test/BABYLON_EMPTY_CONFIG_AWS/prod.yaml
 ---
-# MERGED:
+# MERGED: <1>
 # fixtures/common.yaml
 # fixtures/test/account.yaml
 # fixtures/test/account.meta.yaml
@@ -129,6 +131,7 @@ __meta__:
   - name: gpte
   [...] output omitted
 --------------
+<1> Merge list: gives information about how files were merged to produce the final set of variables
 
 NOTE: `common.yaml` files are always included when merging. `agnosticv` searches for those files as long as it is in the same git repository. If the files are not versioned with git, it is possible to "chroot" the search using the `--root` parameter.
 
@@ -146,6 +149,7 @@ go build -o agnosticv
 
 * _Catalog item_, or _Leaf_: a file considered a catalog item. It appears when listing an agnosticv repository with `agnosticv --list`. To print the content of a catalog item, you run `agnosticv --merge PATH`. That merges common files, meta files, included files, and finally, the leaf to produce the catalog item.
 * _Common file_:  a file that is automatically included in the merge list. Ex: `common.yaml`
+* _Related file_: a file that is related to a catalog item. Ex: `description.adoc`
 * _Included file_: any file that is included in the merge list using the `#include PATH` feature
 * _Meta file_: Any file ending with `.meta.yml` or `.meta.yaml`. It contains the value of the `__meta__` dictionary.
 
@@ -276,6 +280,31 @@ __meta__:
 another_var: value <1>
 ----
 <1> other variables than `\\__meta__` are not allowed
+
+=== Related Files ===
+
+* Related files are helpful in estimating when a catalog item was last changed. All catalog items related to that file are considered touched if a related file is touched.
+* To print all catalog items related to a file, run `agnosticv --list --related-to RELATED_FILE`
+* All included files of a catalog item are automatically considered related files.
+* All common files of a catalog item are automatically considered related files.
+* It is possible to add custom related files using the config file; see section below.
+
+==== Configuration ====
+
+You can add custom related files using the `related_files` configuration option in a `.agnosticv.yaml` configuration file. It contains a list of filenamesj that if present in the same directory of a catalog item, will be considered as related to that catalog item.
+
+
+Here is an example of configuration:
+
+.`/.agnosticv.yaml`
+[source,yaml]
+----
+# For any catalog item, consider those files in same directory as related files:
+related_files:
+  - service-ready-message-template.html.j2
+  - service-ready-message-template.html
+  - description.txt
+----
 
 === Leaf files ===
 

@@ -52,7 +52,6 @@ func (i *arrayFlags) Set(value string) error {
 
 // Global variables
 
-var workDir string
 var mergeStrategies []MergeStrategy
 
 func parseFlags() {
@@ -131,22 +130,39 @@ need this parameter unless your files are not in a git repository, or if you wan
 		}
 
 		rootFlag = abs(rootFlag)
+	} else {
+		// init rootFlag by discovering depending on other flags
+		if listFlag {
+			// use current workdir
+			var workdir string
+			if wd, errWorkDir := os.Getwd() ; errWorkDir == nil {
+				workdir = wd
+			} else {
+				logErr.Fatal(errWorkDir)
+			}
+
+			rootFlag = findRoot(workdir)
+
+		} else if mergeFlag != "" {
+			// Use root of the file to merge
+			rootFlag = findRoot(mergeFlag)
+		}
 	}
 
 	// Do not perform git operations when listing
 	if listFlag {
 		gitFlag = false
 	}
+
+	if debugFlag {
+		logDebug = log.New(os.Stdout, "(d) ", log.LstdFlags)
+	}
 }
 
 func initLoggers() {
 	logErr = log.New(os.Stderr, "!!! ", log.LstdFlags)
 	logOut = log.New(os.Stdout, "    ", log.LstdFlags)
-	if debugFlag {
-		logDebug = log.New(os.Stdout, "(d) ", log.LstdFlags)
-	} else {
-		logDebug = log.New(ioutil.Discard, "(d) ", log.LstdFlags)
-	}
+	logDebug = log.New(ioutil.Discard, "(d) ", log.LstdFlags)
 	logReport = log.New(os.Stdout, "+++ ", log.LstdFlags)
 }
 
@@ -188,6 +204,15 @@ func isPathCatalogItem(root, p string) bool {
 	switch path.Base(p) {
 	case "common.yml", "common.yaml", "account.yml", "account.yaml":
 		return false
+	}
+
+	// Don't consider related file as catalog items
+	if config.initialized {
+		for _, el := range config.RelatedFiles {
+			if path.Base(p) == el {
+				return false
+			}
+		}
 	}
 
 	// Catalog items are yaml files only.
@@ -238,12 +263,24 @@ func isCatalogItem(root, p string) bool {
 }
 
 func extendMergeListWithRelated(pAbs string, mergeList []Include) []Include {
-			// Related == merge list + description.{adoc,html}
-			return append(
-				mergeList,
-				Include{path: filepath.Join(filepath.Dir(pAbs),"description.adoc")},
-				Include{path: filepath.Join(filepath.Dir(pAbs),"description.html")},
+	// Related == merge list + description.{adoc,html} + config.related_files
+
+	result := append(
+		mergeList,
+		Include{path: filepath.Join(filepath.Dir(pAbs),"description.adoc")},
+		Include{path: filepath.Join(filepath.Dir(pAbs),"description.html")},
+	)
+
+	if config.initialized {
+		for _, el := range config.RelatedFiles {
+			result = append(
+				result,
+				Include{path: filepath.Join(filepath.Dir(pAbs), el)},
 			)
+		}
+	}
+
+	return result
 }
 
 func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, orRelatedFlags []string) ([]string, error) {
@@ -503,12 +540,13 @@ func nextCommonFile(position string) string {
 }
 
 func main() {
-
-	parseFlags()
 	initLoggers()
+	parseFlags()
+	initConf(rootFlag)
 	initMergeStrategies()
 
 	// Save current work directory
+	var workDir string
 	if wd, errWorkDir := os.Getwd() ; errWorkDir == nil {
 		workDir = wd
 	} else {
@@ -547,7 +585,7 @@ func main() {
 
 		fmt.Printf("---\n")
 		printMergeStrategies()
-		printPaths(mergeList)
+		printPaths(mergeList, workDir)
 		fmt.Printf("%s", out)
 	}
 }

@@ -164,6 +164,7 @@ func TestSet(t *testing.T) {
 
 func BenchmarkMergeJSON(b *testing.B) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	initMergeStrategies()
 	validateFlag = true
 	initSchemaList()
@@ -181,6 +182,7 @@ func BenchmarkMergeJSON(b *testing.B) {
 
 func TestMerge(t *testing.T) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	initSchemaList()
 	initMergeStrategies()
 	validateFlag = true
@@ -258,6 +260,7 @@ func TestMerge(t *testing.T) {
 
 func TestMergeStrategyOverwrite(t *testing.T) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	initSchemaList()
 	initMergeStrategies()
 	validateFlag = true
@@ -283,6 +286,7 @@ func TestMergeStrategyOverwrite(t *testing.T) {
 
 func TestMergeStrategicMergeList(t *testing.T) {
 	rootFlag = abs("fixtures")
+	initConf(rootFlag)
 	initSchemaList()
 	initMergeStrategies()
 	validateFlag = true
