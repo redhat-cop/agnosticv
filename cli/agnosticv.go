@@ -98,27 +98,27 @@ need this parameter unless your files are not in a git repository, or if you wan
 		os.Exit(0)
 	}
 
-	if len(hasFlags) > 0 && listFlag == false {
+	if len(hasFlags) > 0 && !listFlag {
 		flag.PrintDefaults()
 		os.Exit(2)
 	}
 
-	if len(relatedFlags) > 0 && listFlag == false {
+	if len(relatedFlags) > 0 && !listFlag {
 		flag.PrintDefaults()
 		os.Exit(2)
 	}
 
-	if len(orRelatedFlags) > 0 && listFlag == false {
+	if len(orRelatedFlags) > 0 && !listFlag {
 		flag.PrintDefaults()
 		os.Exit(2)
 	}
 
-	if mergeFlag == "" && listFlag == false {
+	if mergeFlag == "" && !listFlag {
 		flag.PrintDefaults()
 		os.Exit(2)
 	}
 
-	if mergeFlag != "" && listFlag == true {
+	if mergeFlag != "" && listFlag {
 		log.Fatal("You cannot use --merge and --list simultaneously.")
 	}
 
