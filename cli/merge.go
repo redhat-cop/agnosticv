@@ -6,7 +6,7 @@ import (
 	"github.com/go-openapi/jsonpointer"
 	"github.com/imdario/mergo"
 	"github.com/mohae/deepcopy"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
@@ -39,7 +39,6 @@ func initMap(m map[string]any, keys []string) {
 	m[keys[0]] = make(map[string]any)
 	next := m[keys[0]].(map[string]any)
 	initMap(next, keys[1:])
-	return
 }
 
 
@@ -213,7 +212,7 @@ func customStrategyMerge(final map[string]any, source map[string]any, strategy M
 		// Map
 
 		if srcType != reflect.Map {
-			return fmt.Errorf("You can change merge strategy only for maps (dictionaries)")
+			return fmt.Errorf("you can change merge strategy only for maps")
 		}
 
 		var dstPtr any
@@ -289,7 +288,7 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 	for i := 0 ; i < len(mergeList); i = i + 1 {
 		current := make(map[string]any)
 
-		content, err := ioutil.ReadFile(mergeList[i].path)
+		content, err := os.ReadFile(mergeList[i].path)
 		if err != nil {
 			return map[string]any{}, []Include{}, err
 		}
@@ -399,7 +398,9 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 			mergeGitInfo["when_committer"] = commit.Committer.When.UTC().Format(time.RFC3339)
 			mergeGitInfo["hash"] = commit.Hash.String()
 			mergeGitInfo["message"] = strings.SplitN(commit.Message, "\n", 10)[0]
-			SetRelative(final, "/__meta__/last_update/git", mergeGitInfo)
+			if err := SetRelative(final, "/__meta__/last_update/git", mergeGitInfo); err != nil {
+				logErr.Fatalf("Error SetRelative: %v", err)
+			}
 		}
 	}
 
