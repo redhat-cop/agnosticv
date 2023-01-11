@@ -156,6 +156,10 @@ func initLoggers() {
 // root = the root directory of the agnosticV repo.
 func isPathCatalogItem(root, p string) bool {
 
+	if root == p {
+		return false
+	}
+
 	if !chrooted(root, p) {
 		return false
 	}

@@ -3,6 +3,8 @@ package main
 import (
 	"strings"
 	"testing"
+	"io/ioutil"
+	"log"
 )
 
 func BenchmarkParentDir(b *testing.B) {
@@ -239,6 +241,7 @@ func TestIsPathCatalogItem(t *testing.T) {
 
 
 func TestWalk(t *testing.T) {
+	rootFlag = abs("fixtures")
 	testCases := []struct {
 		description string
 		hasFlags []string
@@ -249,7 +252,7 @@ func TestWalk(t *testing.T) {
 		{
 			description: "No JMES filtering",
 			hasFlags: []string{},
-			count: 12,
+			count: 11,
 		},
 		{
 			description: "Related includes/include1.yaml",
@@ -285,7 +288,7 @@ func TestWalk(t *testing.T) {
 			hasFlags: []string{},
 			relatedFlags: []string{"fixtures/includes/include1.yaml"},
 			orRelatedFlags: []string{"fixtures/common.yaml"},
-			count: 12,
+			count: 11,
 		},
 		{
 			description: "Related (exclusive + inclusive) to /common.yaml and --has flag",
@@ -418,13 +421,12 @@ func TestInclude(t *testing.T) {
 		t.Error("value 'from_include1' not found")
 	}
 
+	logErr = log.New(ioutil.Discard, "!!! ", log.LstdFlags)
 	_, _, err = mergeVars("fixtures/gpte/OCP_CLIENTVM/.testloop.yaml", mergeStrategies)
 
 	if err != ErrorIncludeLoop {
 		t.Error("ErrorIncludeLoop expected, got", err)
 	}
-
-
 }
 
 func TestSchemaValidationPatternFailed(t *testing.T) {
@@ -567,5 +569,16 @@ func TestIsMetaPath(t *testing.T) {
 		if result != tc.result {
 			t.Error("with", tc.path, ":", result, "!=", tc.result)
 		}
+	}
+}
+
+func TestWrongMetaFile(t *testing.T) {
+	rootFlag = abs("incorrect-fixtures")
+	logErr = log.New(ioutil.Discard, "!!! ", log.LstdFlags)
+
+	_, _, err := mergeVars("incorrect-fixtures/test/TEST_WRONG_META_FILE/dev.yaml", mergeStrategies)
+
+	if err != ErrorIncorrectMeta {
+		t.Error("ErrorIncorrectMeta expected, got", err)
 	}
 }
