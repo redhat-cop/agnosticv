@@ -18,9 +18,7 @@ import (
 
 // Logs
 var logErr *log.Logger
-var logOut *log.Logger
 var logDebug *log.Logger
-var logReport *log.Logger
 
 // Flags
 type arrayFlags []string
@@ -161,9 +159,7 @@ need this parameter unless your files are not in a git repository, or if you wan
 
 func initLoggers() {
 	logErr = log.New(os.Stderr, "!!! ", log.LstdFlags)
-	logOut = log.New(os.Stdout, "    ", log.LstdFlags)
 	logDebug = log.New(io.Discard, "(d) ", log.LstdFlags)
-	logReport = log.New(os.Stdout, "+++ ", log.LstdFlags)
 }
 
 
