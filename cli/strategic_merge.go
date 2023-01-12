@@ -7,7 +7,6 @@ import (
 	"github.com/imdario/mergo"
 )
 
-
 func strategicCleanupSlice(elems []any) ([]any, error) {
 	result := []any{}
 	done := map[string]int{}
@@ -21,7 +20,6 @@ func strategicCleanupSlice(elems []any) ([]any, error) {
 
 		elemMap := elem.(map[string]any)
 
-
 		if name, ok := elemMap["name"]; ok {
 			if reflect.TypeOf(elemMap["name"]).Kind() != reflect.String {
 				return result, fmt.Errorf("strategic merge cannot work if 'name' is not a string")
@@ -30,7 +28,7 @@ func strategicCleanupSlice(elems []any) ([]any, error) {
 			if doneIndex, ok := done[nameStr]; ok {
 				// An element with the same name exists, replace that element
 				if doneIndex >= len(result) {
-				  return result, fmt.Errorf("index previously found is now out of bound, found:%v  len:%v", doneIndex, len(result))
+					return result, fmt.Errorf("index previously found is now out of bound, found:%v  len:%v", doneIndex, len(result))
 				}
 				result1 := append(result[:doneIndex], elem)
 				result = append(result1, result[doneIndex+1:]...)

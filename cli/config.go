@@ -1,13 +1,12 @@
 package main
 
 import (
-	"path/filepath"
-	"os"
 	"log"
+	"os"
+	"path/filepath"
 
 	yamljson "github.com/ghodss/yaml"
 )
-
 
 type Config struct {
 	// For any leaf file, consider those in same directory as related files:
@@ -20,9 +19,11 @@ type Config struct {
 func getConf(root string) Config {
 	c := Config{}
 
-	path := filepath.Join(root,".agnosticv.yaml")
+	path := filepath.Join(root, ".agnosticv.yaml")
 
-	if !fileExists(path) { return c }
+	if !fileExists(path) {
+		return c
+	}
 
 	yamlFile, err := os.ReadFile(path)
 	if err != nil {

@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
+	yamljson "github.com/ghodss/yaml"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-openapi/jsonpointer"
 	"github.com/imdario/mergo"
 	"github.com/mohae/deepcopy"
@@ -12,8 +14,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	yamljson "github.com/ghodss/yaml"
 )
 
 // MergeStrategy type to define custom merge strategies.
@@ -21,7 +21,7 @@ import (
 // Path: the path in the structure of the vars to apply the strategy against.
 type MergeStrategy struct {
 	Strategy string `json:"strategy,omitempty" yaml:"strategy,omitempty"`
-	Path string `json:"path,omitempty" yaml:"path,omitempty"`
+	Path     string `json:"path,omitempty" yaml:"path,omitempty"`
 }
 
 // initMap initialize a map using a bunch of keys.
@@ -40,7 +40,6 @@ func initMap(m map[string]any, keys []string) {
 	next := m[keys[0]].(map[string]any)
 	initMap(next, keys[1:])
 }
-
 
 // Set copy the value of src defined by path into dst
 // both dst and src are the entire maps
@@ -65,7 +64,7 @@ func Set(dst map[string]any, path string, src map[string]any) error {
 			keys = keys[1:]
 		}
 		// Get rid of last key too: we don't want to initialize the last element
-		keys = keys[0:len(keys) - 1]
+		keys = keys[0 : len(keys)-1]
 	}
 
 	logDebug.Printf("(Set) keys %v", keys)
@@ -97,7 +96,7 @@ func SetRelative(dst map[string]any, path string, srcObj map[string]any) error {
 			keys = keys[1:]
 		}
 		// Get rid of last key too: we don't want to initialize the last element
-		keys = keys[0:len(keys) - 1]
+		keys = keys[0 : len(keys)-1]
 	}
 
 	logDebug.Printf("(Set) keys %v", keys)
@@ -180,7 +179,7 @@ func customStrategyMerge(final map[string]any, source map[string]any, strategy M
 			dst := dst.([]any)
 			src := src.([]any)
 
-			switch(strategy.Strategy) {
+			switch strategy.Strategy {
 			case "overwrite":
 				logDebug.Printf("customStrategyMerge(%v)  overwrite list", strategy)
 				dst = src
@@ -220,7 +219,7 @@ func customStrategyMerge(final map[string]any, source map[string]any, strategy M
 		dstPtr = &dstMap
 
 		logDebug.Printf("customStrategyMerge(%v)", strategy)
-		switch(strategy.Strategy) {
+		switch strategy.Strategy {
 		case "overwrite":
 			if _, err := pointer.Set(final, src); err != nil {
 				return err
@@ -266,7 +265,7 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 	logDebug.Printf("mergeVars(%v)", p)
 
 	// Work with Absolute paths
-	if ! filepath.IsAbs(p) {
+	if !filepath.IsAbs(p) {
 		if abs, errAbs := filepath.Abs(p); errAbs == nil {
 			p = abs
 		} else {
@@ -285,7 +284,7 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 
 	final := make(map[string]any)
 	mergeListObjects := []map[string]any{}
-	for i := 0 ; i < len(mergeList); i = i + 1 {
+	for i := 0; i < len(mergeList); i = i + 1 {
 		current := make(map[string]any)
 
 		content, err := os.ReadFile(mergeList[i].path)
@@ -322,10 +321,9 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 		mergeListObjects = append(mergeListObjects, current)
 	}
 
-
 	for _, current := range mergeListObjects {
 		// Initialization using default overwrite
-		for k,v := range current {
+		for k, v := range current {
 			final[k] = v
 		}
 	}
@@ -354,7 +352,7 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 			merged,
 			mergedStrategy,
 			MergeStrategy{
-				Path: mergeStrategy.Path,
+				Path:     mergeStrategy.Path,
 				Strategy: "overwrite",
 			},
 		)
@@ -372,7 +370,7 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 	}
 
 	// Override final with merged vars
-	for k,v := range merged {
+	for k, v := range merged {
 		final[k] = v
 	}
 
@@ -410,11 +408,11 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 func initMergeStrategies() {
 	mergeStrategies = []MergeStrategy{
 		{
-			Path: "/__meta__",
+			Path:     "/__meta__",
 			Strategy: "merge",
 		},
 		{
-			Path: "/agnosticv_meta",
+			Path:     "/agnosticv_meta",
 			Strategy: "merge",
 		},
 	}
@@ -424,7 +422,7 @@ func initMergeStrategies() {
 	}
 
 	logDebug.Println("(INIT parse merge strategies) ")
-	for _, schema := range(schemas) {
+	for _, schema := range schemas {
 		mergeStrategies = append(mergeStrategies, schema.schema.XMerge...)
 		logDebug.Println("(INIT parse merge strategies) added", schema.schema.XMerge)
 	}

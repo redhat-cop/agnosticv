@@ -27,12 +27,12 @@ var ErrorEmptyPath = errors.New("empty path")
 var ErrorIncludeOutOfChroot = errors.New("include path is out of chroot")
 
 func containsPath(l []Include, p string) bool {
-    for _, a := range l {
-        if a.path == p {
-            return true
-        }
-    }
-    return false
+	for _, a := range l {
+		if a.path == p {
+			return true
+		}
+	}
+	return false
 }
 
 // getMetaPath builds the path of the meta by prepending '.meta' to
@@ -97,7 +97,7 @@ func printPaths(mergeList []Include, workdir string) {
 		fmt.Println("# MERGED:")
 	}
 	for i := 0; i < len(mergeList); i = i + 1 {
-		if relativePath, err := filepath.Rel(workdir, mergeList[i].path) ; err == nil && len(relativePath) < len(mergeList[i].path) {
+		if relativePath, err := filepath.Rel(workdir, mergeList[i].path); err == nil && len(relativePath) < len(mergeList[i].path) {
 			fmt.Printf("#   %s\n", relativePath)
 		} else {
 			fmt.Printf("#   %s\n", mergeList[i].path)

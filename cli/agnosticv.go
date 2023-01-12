@@ -22,6 +22,7 @@ var logDebug *log.Logger
 
 // Flags
 type arrayFlags []string
+
 var listFlag bool
 var relatedFlags arrayFlags
 var orRelatedFlags arrayFlags
@@ -40,7 +41,7 @@ var buildCommit = "HEAD"
 
 // Methods to be able to use the flag multiple times
 func (i *arrayFlags) String() string {
-    return fmt.Sprintf("%s", *i)
+	return fmt.Sprintf("%s", *i)
 }
 
 func (i *arrayFlags) Set(value string) error {
@@ -54,7 +55,7 @@ var mergeStrategies []MergeStrategy
 
 type controlFlow struct {
 	stop bool
-	rc int
+	rc   int
 }
 
 func parseFlags(args []string, output io.Writer) controlFlow {
@@ -134,7 +135,7 @@ need this parameter unless your files are not in a git repository, or if you wan
 	}
 
 	if rootFlag != "" {
-		if ! fileExists(rootFlag) {
+		if !fileExists(rootFlag) {
 			log.Fatalf("File %s does not exist", rootFlag)
 		}
 
@@ -144,7 +145,7 @@ need this parameter unless your files are not in a git repository, or if you wan
 		if listFlag {
 			// use current workdir
 			var workdir string
-			if wd, errWorkDir := os.Getwd() ; errWorkDir == nil {
+			if wd, errWorkDir := os.Getwd(); errWorkDir == nil {
 				workdir = wd
 			} else {
 				logErr.Fatal(errWorkDir)
@@ -175,7 +176,6 @@ func initLoggers() {
 	logDebug = log.New(io.Discard, "(d) ", log.LstdFlags)
 }
 
-
 // isPathCatalogItem checks if p is a catalog item by looking at its path.
 // returns true or false
 // root = the root directory of the agnosticV repo.
@@ -188,7 +188,6 @@ func isPathCatalogItem(root, p string) bool {
 	if !chrooted(root, p) {
 		return false
 	}
-
 
 	// Ignore all catalog items that are in a directory starting with a "."
 	// or are dotfiles.
@@ -276,8 +275,8 @@ func extendMergeListWithRelated(pAbs string, mergeList []Include) []Include {
 
 	result := append(
 		mergeList,
-		Include{path: filepath.Join(filepath.Dir(pAbs),"description.adoc")},
-		Include{path: filepath.Join(filepath.Dir(pAbs),"description.html")},
+		Include{path: filepath.Join(filepath.Dir(pAbs), "description.adoc")},
+		Include{path: filepath.Join(filepath.Dir(pAbs), "description.html")},
 	)
 
 	if config.initialized {
@@ -452,7 +451,7 @@ func chrooted(root string, path string) bool {
 	if !strings.HasSuffix(root, "/") {
 		suffix = "/"
 	}
-	return strings.HasPrefix(path, root + suffix)
+	return strings.HasPrefix(path, root+suffix)
 }
 
 func abs(item string) string {
@@ -535,7 +534,9 @@ func nextCommonFile(position string) string {
 		}
 	}
 
-	if position == "/" { return "" }
+	if position == "/" {
+		return ""
+	}
 
 	// If parent is out of chroot, stop
 	if !chrooted(rootFlag, parentDir(position)) {
@@ -558,7 +559,7 @@ func main() {
 
 	// Save current work directory
 	var workDir string
-	if wd, errWorkDir := os.Getwd() ; errWorkDir == nil {
+	if wd, errWorkDir := os.Getwd(); errWorkDir == nil {
 		workDir = wd
 	} else {
 		logErr.Fatal(errWorkDir)
@@ -592,7 +593,7 @@ func main() {
 			}
 		}
 
-		out, _:= yaml.Marshal(merged)
+		out, _ := yaml.Marshal(merged)
 
 		fmt.Printf("---\n")
 		printMergeStrategies()

@@ -4,7 +4,6 @@ import (
 	"testing"
 )
 
-
 func TestIsRepo(t *testing.T) {
 	if isRepo("/tmp") {
 		t.Error("/tmp is a repo???")

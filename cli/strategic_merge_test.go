@@ -7,22 +7,21 @@ import (
 	yamljson "github.com/ghodss/yaml"
 )
 
-
 func TestCleanupSlice(t *testing.T) {
 	testCases := []struct {
-		doc []byte
+		doc      []byte
 		expected []byte
-		err error
+		err      error
 	}{
 		{
-			doc: []byte(`[]`),
+			doc:      []byte(`[]`),
 			expected: []byte(`[]`),
-			err: nil,
+			err:      nil,
 		},
 		{
-			doc: []byte(`[1,2,3]`),
+			doc:      []byte(`[1,2,3]`),
 			expected: []byte(`[1,2,3]`),
-			err: nil,
+			err:      nil,
 		},
 		{
 			doc: []byte(`
@@ -120,10 +119,10 @@ func TestCleanupSlice(t *testing.T) {
 	for _, tc := range testCases {
 		doc := []any{}
 		expected := []any{}
-		if err := yamljson.Unmarshal(tc.doc, &doc); err != nil{
+		if err := yamljson.Unmarshal(tc.doc, &doc); err != nil {
 			t.Fatal("cannot unmarshal", tc.doc)
 		}
-		if err := yamljson.Unmarshal(tc.expected, &expected); err != nil{
+		if err := yamljson.Unmarshal(tc.expected, &expected); err != nil {
 			t.Fatal("cannot unmarshal", tc.expected)
 		}
 
@@ -141,14 +140,14 @@ func TestCleanupSlice(t *testing.T) {
 
 func TestCleanupMap(t *testing.T) {
 	testCases := []struct {
-		doc []byte
+		doc      []byte
 		expected []byte
-		err error
+		err      error
 	}{
 		{
-			doc: []byte(`{}`),
+			doc:      []byte(`{}`),
 			expected: []byte(`{}`),
-			err: nil,
+			err:      nil,
 		},
 		{
 			doc: []byte(`
@@ -179,10 +178,10 @@ alist:
 	for _, tc := range testCases {
 		doc := map[string]any{}
 		expected := map[string]any{}
-		if err := yamljson.Unmarshal(tc.doc, &doc); err != nil{
+		if err := yamljson.Unmarshal(tc.doc, &doc); err != nil {
 			t.Fatal("cannot unmarshal", tc.doc)
 		}
-		if err := yamljson.Unmarshal(tc.expected, &expected); err != nil{
+		if err := yamljson.Unmarshal(tc.expected, &expected); err != nil {
 			t.Fatal("cannot unmarshal", tc.expected)
 		}
 
@@ -200,16 +199,16 @@ alist:
 
 func TestStrategicMerge(t *testing.T) {
 	testCases := []struct {
-		src []byte
-		dst []byte
+		src      []byte
+		dst      []byte
 		expected []byte
-		err error
+		err      error
 	}{
 		{
-			src: []byte(`{}`),
-			dst: []byte(`{}`),
+			src:      []byte(`{}`),
+			dst:      []byte(`{}`),
 			expected: []byte(`{}`),
-			err: nil,
+			err:      nil,
 		},
 		{
 			src: []byte(`
@@ -287,13 +286,13 @@ nested:
 		src := map[string]any{}
 		dst := map[string]any{}
 		expected := map[string]any{}
-		if err := yamljson.Unmarshal(tc.src, &src); err != nil{
+		if err := yamljson.Unmarshal(tc.src, &src); err != nil {
 			t.Fatal("cannot unmarshal", tc.src)
 		}
-		if err := yamljson.Unmarshal(tc.dst, &dst); err != nil{
+		if err := yamljson.Unmarshal(tc.dst, &dst); err != nil {
 			t.Fatal("cannot unmarshal", tc.dst)
 		}
-		if err := yamljson.Unmarshal(tc.expected, &expected); err != nil{
+		if err := yamljson.Unmarshal(tc.expected, &expected); err != nil {
 			t.Fatal("cannot unmarshal", tc.expected)
 		}
 

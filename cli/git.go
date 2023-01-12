@@ -1,22 +1,20 @@
 package main
 
 import (
+	"bytes"
 	"io"
 	"os/exec"
 	"path/filepath"
-	"bytes"
 
 	git "github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
-
 
 func isRepo(path string) bool {
 	_, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{DetectDotGit: true})
 	return err == nil
 }
-
 
 func findMostRecentCommit(p string, related []Include) *object.Commit {
 	repo, err := git.PlainOpenWithOptions(p, &git.PlainOpenOptions{DetectDotGit: true})
@@ -29,7 +27,7 @@ func findMostRecentCommit(p string, related []Include) *object.Commit {
 	cIter, err := repo.Log(
 		&git.LogOptions{
 			Order: git.LogOrderCommitterTime,
-			All: false,
+			All:   false,
 			PathFilter: func(path string) bool {
 				if filepath.Join(wt.Filesystem.Root(), path) == abs(p) {
 					return true

@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"github.com/getkin/kin-openapi/jsoninfo"
 	"github.com/getkin/kin-openapi/openapi3"
+	jsonyaml "github.com/ghodss/yaml"
 	"os"
 	"path/filepath"
 	"strings"
-	jsonyaml "github.com/ghodss/yaml"
 )
 
 // Schema type
 type Schema struct {
-	path string
+	path   string
 	schema *AgnosticvSchema
-	data []byte
+	data   []byte
 }
 
 // AgnosticvSchema is openapi schema plus some extensions
@@ -104,7 +104,7 @@ func getSchemaList() ([]Schema, error) {
 				schemaMap,
 				defaultSchemaMap,
 				MergeStrategy{
-					Path: "/properties/__meta__",
+					Path:     "/properties/__meta__",
 					Strategy: "merge",
 				},
 			); err != nil {
@@ -130,9 +130,9 @@ func getSchemaList() ([]Schema, error) {
 		// Add schema
 
 		result = append(result, Schema{
-			path: pAbs,
+			path:   pAbs,
 			schema: schema,
-			data: data,
+			data:   data,
 		})
 
 		return nil
