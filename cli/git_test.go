@@ -18,3 +18,11 @@ func TestIsRepo(t *testing.T) {
 		t.Error("agnosticv.go is not in a repo")
 	}
 }
+
+func TestFindMostRecentCommit(t *testing.T) {
+
+	if commit := findMostRecentCommit("agnosticv.go", []Include{}); commit.Hash.IsZero() {
+		t.Error(commit)
+	}
+
+}
