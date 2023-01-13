@@ -22,6 +22,7 @@ var logDebug *log.Logger
 
 // Flags
 type arrayFlags []string
+
 var listFlag bool
 var relatedFlags arrayFlags
 var orRelatedFlags arrayFlags
@@ -40,7 +41,7 @@ var buildCommit = "HEAD"
 
 // Methods to be able to use the flag multiple times
 func (i *arrayFlags) String() string {
-    return fmt.Sprintf("%s", *i)
+	return fmt.Sprintf("%s", *i)
 }
 
 func (i *arrayFlags) Set(value string) error {
@@ -52,10 +53,17 @@ func (i *arrayFlags) Set(value string) error {
 
 var mergeStrategies []MergeStrategy
 
-func parseFlags() {
-	flag.BoolVar(&listFlag, "list", false, "List all the catalog items present in current directory.")
-	flag.BoolVar(&validateFlag, "validate", true, "Validate variables against schemas present in .schemas directory.")
-	flag.Var(&relatedFlags, "related", `Use with --list only. Filter output and display only related catalog items.
+type controlFlow struct {
+	stop bool
+	rc   int
+}
+
+func parseFlags(args []string, output io.Writer) controlFlow {
+	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
+	flags.SetOutput(output)
+	flags.BoolVar(&listFlag, "list", false, "List all the catalog items present in current directory.")
+	flags.BoolVar(&validateFlag, "validate", true, "Validate variables against schemas present in .schemas directory.")
+	flags.Var(&relatedFlags, "related", `Use with --list only. Filter output and display only related catalog items.
 A catalog item is related to FILE if:
 - it includes FILE as a common file
 - it includes FILE via #include
@@ -66,14 +74,14 @@ Example:
    List all catalog items under dir/ that also include includes/foo.yaml
 
 Can be used several times (act like AND).`)
-	flag.Var(&orRelatedFlags, "or-related", `Use with --list only. Same as --related except it appends the related files to the list instead of reducing it.
+	flags.Var(&orRelatedFlags, "or-related", `Use with --list only. Same as --related except it appends the related files to the list instead of reducing it.
 
 Example:
 --list --related dir/common.yaml --or-related includes/foo.yaml
    List all catalog items under dir/ and also all catalog items that include includes/foo.yaml
 
 Can be used several times (act like OR).`)
-	flag.Var(&hasFlags, "has", `Use with --list only. Filter catalog items using a JMESPath expression.
+	flags.Var(&hasFlags, "has", `Use with --list only. Filter catalog items using a JMESPath expression.
 Can be used several times (act like AND).
 
 Examples:
@@ -81,49 +89,53 @@ Examples:
 --has "env_type == 'ocp-clientvm'"
 --has "to_string(worker_instance_count) == '2'"
 `)
-	flag.BoolVar(&debugFlag, "debug", false, "Debug mode")
-	flag.StringVar(&mergeFlag, "merge", "", "Merge and print variables of a catalog item.")
-	flag.StringVar(&rootFlag, "root", "", `The top directory of the agnosticv files. Files outside of this directory will not be merged.
+	flags.BoolVar(&debugFlag, "debug", false, "Debug mode")
+	flags.StringVar(&mergeFlag, "merge", "", "Merge and print variables of a catalog item.")
+	flags.StringVar(&rootFlag, "root", "", `The top directory of the agnosticv files. Files outside of this directory will not be merged.
 By default, it's empty, and the scope of the git repository is used, so you should not
 need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.`)
-	flag.BoolVar(&versionFlag, "version", false, "Print build version.")
-	flag.BoolVar(&gitFlag, "git", true, "Perform git operations to gather and inject information into the merged vars like 'last_update'. Git operations are slow so this option is automatically disabled for listing.")
+	flags.BoolVar(&versionFlag, "version", false, "Print build version.")
+	flags.BoolVar(&gitFlag, "git", true, "Perform git operations to gather and inject information into the merged vars like 'last_update'. Git operations are slow so this option is automatically disabled for listing.")
 
-	flag.Parse()
+	if err := flags.Parse(args[1:]); err != nil {
+		flags.PrintDefaults()
+		return controlFlow{true, 2}
+	}
 
 	if versionFlag {
-		fmt.Println("Version:", Version)
-		fmt.Println("Build time:", buildTime)
-		fmt.Println("Build commit:", buildCommit)
-		os.Exit(0)
+		fmt.Fprintln(output, "Version:", Version)
+		fmt.Fprintln(output, "Build time:", buildTime)
+		fmt.Fprintln(output, "Build commit:", buildCommit)
+		return controlFlow{true, 0}
 	}
 
 	if len(hasFlags) > 0 && !listFlag {
-		flag.PrintDefaults()
-		os.Exit(2)
+		flags.PrintDefaults()
+		return controlFlow{true, 2}
 	}
 
 	if len(relatedFlags) > 0 && !listFlag {
-		flag.PrintDefaults()
-		os.Exit(2)
+		flags.PrintDefaults()
+		return controlFlow{true, 2}
 	}
 
 	if len(orRelatedFlags) > 0 && !listFlag {
-		flag.PrintDefaults()
-		os.Exit(2)
+		flags.PrintDefaults()
+		return controlFlow{true, 2}
 	}
 
 	if mergeFlag == "" && !listFlag {
-		flag.PrintDefaults()
-		os.Exit(2)
+		flags.PrintDefaults()
+		return controlFlow{true, 2}
 	}
 
 	if mergeFlag != "" && listFlag {
-		log.Fatal("You cannot use --merge and --list simultaneously.")
+		fmt.Fprintln(output, "You cannot use --merge and --list simultaneously.")
+		return controlFlow{true, 2}
 	}
 
 	if rootFlag != "" {
-		if ! fileExists(rootFlag) {
+		if !fileExists(rootFlag) {
 			log.Fatalf("File %s does not exist", rootFlag)
 		}
 
@@ -133,7 +145,7 @@ need this parameter unless your files are not in a git repository, or if you wan
 		if listFlag {
 			// use current workdir
 			var workdir string
-			if wd, errWorkDir := os.Getwd() ; errWorkDir == nil {
+			if wd, errWorkDir := os.Getwd(); errWorkDir == nil {
 				workdir = wd
 			} else {
 				logErr.Fatal(errWorkDir)
@@ -155,13 +167,14 @@ need this parameter unless your files are not in a git repository, or if you wan
 	if debugFlag {
 		logDebug = log.New(os.Stdout, "(d) ", log.LstdFlags)
 	}
+
+	return controlFlow{false, 0}
 }
 
 func initLoggers() {
 	logErr = log.New(os.Stderr, "!!! ", log.LstdFlags)
 	logDebug = log.New(io.Discard, "(d) ", log.LstdFlags)
 }
-
 
 // isPathCatalogItem checks if p is a catalog item by looking at its path.
 // returns true or false
@@ -175,7 +188,6 @@ func isPathCatalogItem(root, p string) bool {
 	if !chrooted(root, p) {
 		return false
 	}
-
 
 	// Ignore all catalog items that are in a directory starting with a "."
 	// or are dotfiles.
@@ -263,8 +275,8 @@ func extendMergeListWithRelated(pAbs string, mergeList []Include) []Include {
 
 	result := append(
 		mergeList,
-		Include{path: filepath.Join(filepath.Dir(pAbs),"description.adoc")},
-		Include{path: filepath.Join(filepath.Dir(pAbs),"description.html")},
+		Include{path: filepath.Join(filepath.Dir(pAbs), "description.adoc")},
+		Include{path: filepath.Join(filepath.Dir(pAbs), "description.html")},
 	)
 
 	if config.initialized {
@@ -439,7 +451,7 @@ func chrooted(root string, path string) bool {
 	if !strings.HasSuffix(root, "/") {
 		suffix = "/"
 	}
-	return strings.HasPrefix(path, root + suffix)
+	return strings.HasPrefix(path, root+suffix)
 }
 
 func abs(item string) string {
@@ -522,7 +534,9 @@ func nextCommonFile(position string) string {
 		}
 	}
 
-	if position == "/" { return "" }
+	if position == "/" {
+		return ""
+	}
 
 	// If parent is out of chroot, stop
 	if !chrooted(rootFlag, parentDir(position)) {
@@ -537,13 +551,15 @@ func nextCommonFile(position string) string {
 
 func main() {
 	initLoggers()
-	parseFlags()
+	if flow := parseFlags(os.Args, os.Stdout); flow.stop {
+		os.Exit(flow.rc)
+	}
 	initConf(rootFlag)
 	initMergeStrategies()
 
 	// Save current work directory
 	var workDir string
-	if wd, errWorkDir := os.Getwd() ; errWorkDir == nil {
+	if wd, errWorkDir := os.Getwd(); errWorkDir == nil {
 		workDir = wd
 	} else {
 		logErr.Fatal(errWorkDir)
@@ -577,7 +593,7 @@ func main() {
 			}
 		}
 
-		out, _:= yaml.Marshal(merged)
+		out, _ := yaml.Marshal(merged)
 
 		fmt.Printf("---\n")
 		printMergeStrategies()

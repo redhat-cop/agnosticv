@@ -12,6 +12,9 @@ x-merge:
 
   - path: /strategic_dict
     strategy: strategic-merge
+
+  - path: /noappend_dict
+    strategy: merge-no-append
 properties:
   purpose:
     type: string

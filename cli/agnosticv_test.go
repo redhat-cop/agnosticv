@@ -1,10 +1,11 @@
 package main
 
 import (
-	"strings"
-	"testing"
 	"io"
 	"log"
+	"os"
+	"strings"
+	"testing"
 )
 
 func BenchmarkParentDir(b *testing.B) {
@@ -29,7 +30,7 @@ func TestParentDir(t *testing.T) {
 		"/",
 	}
 
-	for i := 0 ; i < len(input) ; i++ {
+	for i := 0; i < len(input); i++ {
 		if parentDir(input[i]) != expected[i] {
 			t.Error(input[i], expected[i])
 		}
@@ -38,63 +39,63 @@ func TestParentDir(t *testing.T) {
 
 func TestChrooted(t *testing.T) {
 	testCases := []struct {
-		root string
-		path string
+		root   string
+		path   string
 		result bool
 	}{
 		{
-			root: "/ok",
-			path: "/",
+			root:   "/ok",
+			path:   "/",
 			result: false,
 		},
 		{
-			root: "ok",
-			path: "/",
+			root:   "ok",
+			path:   "/",
 			result: false,
 		},
 		{
-			root: "foo/bar",
-			path: "foo/bar",
+			root:   "foo/bar",
+			path:   "foo/bar",
 			result: true,
 		},
 		{
-			root: "foo/bar",
-			path: "foo/bar/a",
+			root:   "foo/bar",
+			path:   "foo/bar/a",
 			result: true,
 		},
 		{
-			root: "/ok",
-			path: "/ok/foo/bar",
+			root:   "/ok",
+			path:   "/ok/foo/bar",
 			result: true,
 		},
 		{
-			root: "/",
-			path: "/whatever",
+			root:   "/",
+			path:   "/whatever",
 			result: true,
 		},
 		{
-			root: "/ok",
-			path: "/ok",
+			root:   "/ok",
+			path:   "/ok",
 			result: true,
 		},
 		{
-			root: "/foo",
-			path: "/bar",
+			root:   "/foo",
+			path:   "/bar",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/a.yaml",
 			result: true,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/a.yaml",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/cc/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/cc/a.yaml",
 			result: false,
 		},
 	}
@@ -107,50 +108,50 @@ func TestChrooted(t *testing.T) {
 }
 func TestResolvePath(t *testing.T) {
 	testCases := []struct {
-		root string
-		path string
+		root        string
+		path        string
 		contextFile string
-		result string
+		result      string
 		description string
 		expectedErr error
 	}{
 		{
-			root: "/a/b/c",
-			path: "/d.yaml",
+			root:        "/a/b/c",
+			path:        "/d.yaml",
 			contextFile: "whatever",
-			result: "/a/b/c/d.yaml",
+			result:      "/a/b/c/d.yaml",
 			description: "include absolute path in AgnosticV repo",
 			expectedErr: nil,
 		},
 		{
-			root: "/a/b/c",
-			path: "/d/e/f.yaml",
+			root:        "/a/b/c",
+			path:        "/d/e/f.yaml",
 			contextFile: "whatever",
-			result: "/a/b/c/d/e/f.yaml",
+			result:      "/a/b/c/d/e/f.yaml",
 			description: "include absolute path in AgnosticV repo",
 			expectedErr: nil,
 		},
 		{
-			root: "/a/b/c",
-			path: "foo.yaml",
+			root:        "/a/b/c",
+			path:        "foo.yaml",
 			contextFile: "/a/b/c/d/bar.yaml",
-			result: "/a/b/c/d/foo.yaml",
+			result:      "/a/b/c/d/foo.yaml",
 			description: "include relative path in AgnosticV repo",
 			expectedErr: nil,
 		},
 		{
-			root: "/a/b/c",
-			path: "../bar.yaml",
+			root:        "/a/b/c",
+			path:        "../bar.yaml",
 			contextFile: "/a/b/c/d/foo.yaml",
-			result: "/a/b/c/bar.yaml",
+			result:      "/a/b/c/bar.yaml",
 			description: "include relative path, with '..', in AgnosticV repo",
 			expectedErr: nil,
 		},
 		{
-			root: "/a/b/c",
-			path: "../../../../bar.yaml",
+			root:        "/a/b/c",
+			path:        "../../../../bar.yaml",
 			contextFile: "/a/b/c/d/foo.yaml",
-			result: "",
+			result:      "",
 			description: "include relative path, with many '..', in AgnosticV repo",
 			expectedErr: ErrorIncludeOutOfChroot,
 		},
@@ -171,63 +172,63 @@ func TestResolvePath(t *testing.T) {
 
 func TestIsPathCatalogItem(t *testing.T) {
 	testCases := []struct {
-		root string
-		path string
+		root   string
+		path   string
 		result bool
 	}{
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/a.yaml",
 			result: true,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/a.yaml",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/.dotdir/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/.dotdir/a.yaml",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/.dotfile.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/.dotfile.yaml",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/notyaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/notyaml",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/cc/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/cc/a.yaml",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/d/e/f/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/d/e/f/a.yaml",
 			result: true,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/common.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/common.yaml",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/includes/e/f/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/includes/e/f/a.yaml",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/d/includes/f/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/d/includes/f/a.yaml",
 			result: false,
 		},
 		{
-			root: "/a/b/c",
-			path: "/a/b/c/d/e/includes/a.yaml",
+			root:   "/a/b/c",
+			path:   "/a/b/c/d/e/includes/a.yaml",
 			result: false,
 		},
 	}
@@ -239,37 +240,36 @@ func TestIsPathCatalogItem(t *testing.T) {
 	}
 }
 
-
 func TestWalk(t *testing.T) {
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
 	testCases := []struct {
-		description string
-		hasFlags []string
-		relatedFlags []string
+		description    string
+		hasFlags       []string
+		relatedFlags   []string
 		orRelatedFlags []string
-		count int
+		count          int
 	}{
 		{
 			description: "No JMES filtering",
-			hasFlags: []string{},
-			count: 11,
+			hasFlags:    []string{},
+			count:       11,
 		},
 		{
-			description: "Related includes/include1.yaml",
-			hasFlags: []string{},
+			description:  "Related includes/include1.yaml",
+			hasFlags:     []string{},
 			relatedFlags: []string{"fixtures/includes/include1.yaml"},
-			count: 2,
+			count:        2,
 		},
 		{
-			description: "Related to fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
-			hasFlags: []string{},
+			description:  "Related to fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
+			hasFlags:     []string{},
 			relatedFlags: []string{"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml"},
-			count: 3,
+			count:        3,
 		},
 		{
 			description: "Related to fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml and test.yaml",
-			hasFlags: []string{},
+			hasFlags:    []string{},
 			relatedFlags: []string{
 				"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
 				"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
@@ -278,40 +278,40 @@ func TestWalk(t *testing.T) {
 		},
 		{
 			description: "Related to fixtures/gpte/OCP_CLIENTVM/description.adoc",
-			hasFlags: []string{},
+			hasFlags:    []string{},
 			relatedFlags: []string{
 				"fixtures/gpte/OCP_CLIENTVM/description.adoc",
 			},
 			count: 2,
 		},
 		{
-			description: "Related (inclusive, --or-related) to /common.yaml",
-			hasFlags: []string{},
-			relatedFlags: []string{"fixtures/includes/include1.yaml"},
+			description:    "Related (inclusive, --or-related) to /common.yaml",
+			hasFlags:       []string{},
+			relatedFlags:   []string{"fixtures/includes/include1.yaml"},
 			orRelatedFlags: []string{"fixtures/common.yaml"},
-			count: 11,
+			count:          11,
 		},
 		{
-			description: "Related (exclusive + inclusive) to /common.yaml and --has flag",
-			hasFlags: []string{"foodict"},
-			relatedFlags: []string{"fixtures/includes/include1.yaml"},
+			description:    "Related (exclusive + inclusive) to /common.yaml and --has flag",
+			hasFlags:       []string{"foodict"},
+			relatedFlags:   []string{"fixtures/includes/include1.yaml"},
 			orRelatedFlags: []string{"fixtures/common.yaml"},
-			count: 1,
+			count:          1,
 		},
 		{
 			description: "key foodict is present",
-			hasFlags: []string{"foodict"},
-			count: 1,
+			hasFlags:    []string{"foodict"},
+			count:       1,
 		},
 		{
 			description: "env_type is clientvm",
-			hasFlags: []string{"env_type == 'ocp-clientvm'"},
-			count: 2,
+			hasFlags:    []string{"env_type == 'ocp-clientvm'"},
+			count:       2,
 		},
 		{
 			description: "Is a Babylon catalog item",
-			hasFlags: []string{"__meta__.catalog"},
-			count: 5,
+			hasFlags:    []string{"__meta__.catalog"},
+			count:       5,
 		},
 		{
 			description: "env_type is clientvm and purpose is development",
@@ -337,61 +337,54 @@ func TestWalk(t *testing.T) {
 
 func TestParseInclude(t *testing.T) {
 	testCases := []struct {
-		line string
+		line  string
 		found bool
-		path string
+		path  string
 	}{
 		{
-			line: "#include /path/ok",
+			line:  "#include /path/ok",
 			found: true,
-			path: "/path/ok",
-
+			path:  "/path/ok",
 		},
 		{
-			line: "#include    /path/ok",
+			line:  "#include    /path/ok",
 			found: true,
-			path: "/path/ok",
-
+			path:  "/path/ok",
 		},
 		{
-			line: "#include \"/path/ok\"",
+			line:  "#include \"/path/ok\"",
 			found: true,
-			path: "/path/ok",
-
+			path:  "/path/ok",
 		},
 		{
-			line: "#include \"/path/ok\"    ",
+			line:  "#include \"/path/ok\"    ",
 			found: true,
-			path: "/path/ok",
-
+			path:  "/path/ok",
 		},
 		{
-			line: "  #include \"/path/ok\"    ",
+			line:  "  #include \"/path/ok\"    ",
 			found: true,
-			path: "/path/ok",
-
+			path:  "/path/ok",
 		},
 		{
-			line: "#iclude \"/path/ok\"    ",
+			line:  "#iclude \"/path/ok\"    ",
 			found: false,
-			path: "",
-
+			path:  "",
 		},
 		{
-			line: "",
+			line:  "",
 			found: false,
-			path: "",
-
+			path:  "",
 		},
 		{
-			line: "#include \"/path  with space \" ",
+			line:  "#include \"/path  with space \" ",
 			found: true,
-			path: "/path  with space ",
+			path:  "/path  with space ",
 		},
 		{
-			line: "#include /path  with space without quotes ",
+			line:  "#include /path  with space without quotes ",
 			found: false,
-			path: "",
+			path:  "",
 		},
 	}
 
@@ -402,7 +395,6 @@ func TestParseInclude(t *testing.T) {
 		}
 	}
 }
-
 
 func TestInclude(t *testing.T) {
 
@@ -467,7 +459,6 @@ func TestSchemaValidationOK(t *testing.T) {
 	}
 }
 
-
 func TestGetMergeList(t *testing.T) {
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
@@ -492,33 +483,33 @@ func TestGetMetaPath(t *testing.T) {
 	initSchemaList()
 
 	testCases := []struct {
-		path string
-		meta string
+		path        string
+		meta        string
 		expectedErr error
 	}{
 		{
-			path: "/ok/dev.yaml",
-			meta: "/ok/dev.meta.yaml",
+			path:        "/ok/dev.yaml",
+			meta:        "/ok/dev.meta.yaml",
 			expectedErr: nil,
 		},
 		{
-			path: "/ok/dev.yml",
-			meta: "/ok/dev.meta.yml",
+			path:        "/ok/dev.yml",
+			meta:        "/ok/dev.meta.yml",
 			expectedErr: nil,
 		},
 		{
-			path: "dev.yaml",
-			meta: "dev.meta.yaml",
+			path:        "dev.yaml",
+			meta:        "dev.meta.yaml",
 			expectedErr: nil,
 		},
 		{
-			path: "dev.yaml",
-			meta: "dev.meta.yaml",
+			path:        "dev.yaml",
+			meta:        "dev.meta.yaml",
 			expectedErr: nil,
 		},
 		{
-			path: "",
-			meta: "",
+			path:        "",
+			meta:        "",
 			expectedErr: ErrorEmptyPath,
 		},
 	}
@@ -535,7 +526,6 @@ func TestGetMetaPath(t *testing.T) {
 		}
 	}
 
-
 }
 
 func TestIsMetaPath(t *testing.T) {
@@ -545,27 +535,27 @@ func TestIsMetaPath(t *testing.T) {
 	initSchemaList()
 
 	testCases := []struct {
-		path string
+		path   string
 		result bool
 	}{
 		{
-			path: "/ok/dev.yaml",
+			path:   "/ok/dev.yaml",
 			result: false,
 		},
 		{
-			path: "/ok/dev.meta.yaml",
+			path:   "/ok/dev.meta.yaml",
 			result: true,
 		},
 		{
-			path: "dev.meta.yml",
+			path:   "dev.meta.yml",
 			result: true,
 		},
 		{
-			path: ".yml",
+			path:   ".yml",
 			result: false,
 		},
 		{
-			path: "",
+			path:   "",
 			result: false,
 		},
 	}
@@ -587,5 +577,30 @@ func TestWrongMetaFile(t *testing.T) {
 
 	if err != ErrorIncorrectMeta {
 		t.Error("ErrorIncorrectMeta expected, got", err)
+	}
+}
+
+func TestFindRoot(t *testing.T) {
+	wd, _ := os.Getwd()
+
+	wd = abs(wd)
+	parent := parentDir(wd)
+
+	testCases := []struct {
+		path   string
+		result string
+	}{
+		{
+			path:   "fixtures",
+			result: parent,
+		},
+	}
+
+	for _, tc := range testCases {
+		result := findRoot(tc.path)
+
+		if result != tc.result {
+			t.Error("with", tc.path, ":", result, "!=", tc.result)
+		}
 	}
 }
