@@ -64,6 +64,38 @@ func TestFlag(t *testing.T) {
 			description: "-merge and -list both provided",
 			result:      controlFlow{true, 2},
 		},
+		{
+			args: []string{"agnosticv", "--list",
+				"--output", "json"},
+			description: "-output and -list, json output",
+			result:      controlFlow{false, 0},
+		},
+		{
+			args: []string{"agnosticv", "--list",
+				"--output", "yaml"},
+			description: "-output and -list, yaml output ",
+			result:      controlFlow{false, 0},
+		},
+		{
+			args: []string{"agnosticv", "--list",
+				"--output", "unknown"},
+			description: "-output and -list, wrong output",
+			result:      controlFlow{true, 2},
+		},
+		{
+			args: []string{"agnosticv",
+				"--merge", "fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml",
+				"--output", "unknown"},
+			description: "-output and -merge, wrong output",
+			result:      controlFlow{true, 2},
+		},
+		{
+			args: []string{"agnosticv",
+				"--merge", "fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml",
+				"--output", "yaml"},
+			description: "-output and -merge, yaml output",
+			result:      controlFlow{false, 0},
+		},
 	}
 
 	for _, tc := range testCases {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -33,6 +34,7 @@ var rootFlag string
 var validateFlag bool
 var versionFlag bool
 var gitFlag bool
+var outputFlag string
 
 // Build info
 var Version = "development"
@@ -96,6 +98,7 @@ By default, it's empty, and the scope of the git repository is used, so you shou
 need this parameter unless your files are not in a git repository, or if you want to use a subdir. Use -root flag with -merge.`)
 	flags.BoolVar(&versionFlag, "version", false, "Print build version.")
 	flags.BoolVar(&gitFlag, "git", true, "Perform git operations to gather and inject information into the merged vars like 'last_update'. Git operations are slow so this option is automatically disabled for listing.")
+	flags.StringVar(&outputFlag, "output", "", "Output format. Possible values: json or yaml. Default is 'yaml' for merging.")
 
 	if err := flags.Parse(args[1:]); err != nil {
 		flags.PrintDefaults()
@@ -134,6 +137,11 @@ need this parameter unless your files are not in a git repository, or if you wan
 		return controlFlow{true, 2}
 	}
 
+	if mergeFlag != "" && outputFlag == "" {
+		// Set to YAML by default when merging
+		outputFlag = "yaml"
+	}
+
 	if rootFlag != "" {
 		if !fileExists(rootFlag) {
 			log.Fatalf("File %s does not exist", rootFlag)
@@ -166,6 +174,13 @@ need this parameter unless your files are not in a git repository, or if you wan
 
 	if debugFlag {
 		logDebug = log.New(os.Stdout, "(d) ", log.LstdFlags)
+	}
+
+	switch outputFlag {
+	case "yaml", "json", "":
+	default:
+		fmt.Fprintln(output, "Unsupported format for output: ", outputFlag)
+		return controlFlow{true, 2}
 	}
 
 	return controlFlow{false, 0}
@@ -576,8 +591,20 @@ func main() {
 			logErr.Printf("error walking the path %q: %v\n", ".", err)
 			return
 		}
-		for _, ci := range catalogItems {
-			fmt.Println(ci)
+
+		switch outputFlag {
+		case "yaml":
+			out, _ := yaml.Marshal(catalogItems)
+			fmt.Printf("%s", out)
+
+		case "json":
+			out, _ := json.Marshal(catalogItems)
+			fmt.Printf("%s", out)
+
+		default:
+			for _, ci := range catalogItems {
+				fmt.Println(ci)
+			}
 		}
 	}
 
@@ -593,11 +620,19 @@ func main() {
 			}
 		}
 
-		out, _ := yaml.Marshal(merged)
+		switch outputFlag {
+		case "json":
+			out, _ := json.Marshal(merged)
+			fmt.Printf("%s", out)
+		case "yaml":
+			out, _ := yaml.Marshal(merged)
 
-		fmt.Printf("---\n")
-		printMergeStrategies()
-		printPaths(mergeList, workDir)
-		fmt.Printf("%s", out)
+			fmt.Printf("---\n")
+			printMergeStrategies()
+			printPaths(mergeList, workDir)
+			fmt.Printf("%s", out)
+		default:
+			logErr.Fatal("Unsupported format for output:", outputFlag)
+		}
 	}
 }
