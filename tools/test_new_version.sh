@@ -60,6 +60,13 @@ for ci in $($cli1 --list); do
 	fi
 
 	echo YES
+
+	echo -n "testing merge $ci JSON ......................."
+    if ! $cli2 --merge $ci --output json | jq . > /dev/null; then
+        echo NO
+    else
+        echo YES
+    fi
 done
 
 for fil in $(find -name common.yaml) $(find -name account.yaml) $(find includes -type f); do
