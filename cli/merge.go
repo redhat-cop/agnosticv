@@ -16,14 +16,6 @@ import (
 	"time"
 )
 
-// MergeStrategy type to define custom merge strategies.
-// Strategy: the name of the strategy
-// Path: the path in the structure of the vars to apply the strategy against.
-type MergeStrategy struct {
-	Strategy string `json:"strategy,omitempty" yaml:"strategy,omitempty"`
-	Path     string `json:"path,omitempty" yaml:"path,omitempty"`
-}
-
 // initMap initialize a map using a bunch of keys.
 func initMap(m map[string]any, keys []string) {
 	logDebug.Printf("(initMap) %v", keys)

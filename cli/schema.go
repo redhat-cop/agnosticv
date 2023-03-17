@@ -1,13 +1,15 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/getkin/kin-openapi/jsoninfo"
-	"github.com/getkin/kin-openapi/openapi3"
-	jsonyaml "github.com/ghodss/yaml"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	jsonyaml "github.com/ghodss/yaml"
 )
 
 // Schema type
@@ -17,21 +19,43 @@ type Schema struct {
 	data   []byte
 }
 
+// MergeStrategy type to define custom merge strategies.
+// Strategy: the name of the strategy
+// Path: the path in the structure of the vars to apply the strategy against.
+type MergeStrategy struct {
+	Strategy string `json:"strategy,omitempty" yaml:"strategy,omitempty"`
+	Path     string `json:"path,omitempty" yaml:"path,omitempty"`
+}
+
+type MergeStrategies struct {
+	XMerge []MergeStrategy `json:"x-merge,omitempty" yaml:"x-merge,omitempty"`
+}
+
 // AgnosticvSchema is openapi schema plus some extensions
 type AgnosticvSchema struct {
+	MergeStrategies
 	openapi3.Schema
+}
 
-	XMerge []MergeStrategy `json:"x-merge,omitempty" yaml:"x-merge,omitempty"`
+func (m *MergeStrategies) UnmarshalJSON(data []byte) error {
+	type Alias MergeStrategies
+	var alias Alias
+	if err := json.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+	m.XMerge = alias.XMerge
+	return nil
 }
 
 // UnmarshalJSON sets AnosticvSchema to a copy of data.
 func (schema *AgnosticvSchema) UnmarshalJSON(data []byte) error {
-	return jsoninfo.UnmarshalStrictStruct(data, schema)
-}
-
-// MarshalJSON returns the JSON encoding of Schema.
-func (schema *AgnosticvSchema) MarshalJSON() ([]byte, error) {
-	return jsoninfo.MarshalStrictStruct(schema)
+	if err := json.Unmarshal(data, &schema.Schema); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, &schema.MergeStrategies); err != nil {
+		return err
+	}
+	return nil
 }
 
 var schemas []Schema
@@ -76,19 +100,19 @@ func getSchemaList() ([]Schema, error) {
 
 		schema := new(AgnosticvSchema)
 
-		if err := jsonyaml.Unmarshal(content, schema); err != nil {
+		data, err := jsonyaml.YAMLToJSON(content)
+		if err != nil {
 			return err
 		}
 
-		data, err := jsonyaml.YAMLToJSON(content)
-		if err != nil {
+		if err := json.Unmarshal(data, schema); err != nil {
 			return err
 		}
 
 		// 3. merge Default schema if __meta__ is found
 
 		schemaMap := make(map[string]any)
-		if err := jsonyaml.Unmarshal(content, &schemaMap); err != nil {
+		if err := json.Unmarshal(data, &schemaMap); err != nil {
 			return err
 		}
 
@@ -114,21 +138,21 @@ func getSchemaList() ([]Schema, error) {
 
 			// rewrite schema and data
 
-			if content, err = jsonyaml.Marshal(schemaMap); err != nil {
+			if data, err = json.Marshal(schemaMap); err != nil {
 				return err
 			}
 
-			if err := jsonyaml.Unmarshal(content, schema); err != nil {
-				return err
-			}
-
-			if data, err = jsonyaml.YAMLToJSON(content); err != nil {
+			if err := json.Unmarshal(data, schema); err != nil {
 				return err
 			}
 		}
 
 		// Add schema
 
+		// validate schema
+		if err := schema.Validate(context.Background()); err != nil {
+			return err
+		}
 		result = append(result, Schema{
 			path:   pAbs,
 			schema: schema,

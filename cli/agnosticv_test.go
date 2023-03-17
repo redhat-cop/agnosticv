@@ -436,8 +436,14 @@ func TestSchemaValidationPatternFailed(t *testing.T) {
 	}
 	errValidation := validateAgainstSchemas(path, merged)
 
-	if !strings.Contains(errValidation.Error(), "Error at \"/__meta__/lifespan/default\": string doesn't match the regular expression") {
-		t.Error("ErrorSchema not found", errValidation)
+	if errValidation == nil {
+		t.Error("Error expected")
+	} else {
+		if !strings.Contains(
+			errValidation.Error(),
+			"Error at \"/__meta__/lifespan/default\": string doesn't match the regular expression") {
+			t.Error("ErrorSchema not found", errValidation)
+		}
 	}
 }
 

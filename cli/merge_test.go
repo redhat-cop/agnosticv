@@ -334,7 +334,6 @@ func TestMergeStrategicMergeList(t *testing.T) {
 	}
 }
 
-
 func TestRelativeFileLoadInto(t *testing.T) {
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
@@ -354,8 +353,8 @@ func TestRelativeFileLoadInto(t *testing.T) {
 		t.Error(err)
 	}
 	expected := map[string]any{
-		"format":"jinja2",
-		"template":"jinja2 content",
+		"format":        "jinja2",
+		"template":      "jinja2 content",
 		"output_format": "html",
 	}
 
