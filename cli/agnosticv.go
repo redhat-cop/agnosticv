@@ -236,6 +236,11 @@ func isPathCatalogItem(root, p string) bool {
 				return false
 			}
 		}
+		for _, el := range config.RelatedFilesV2 {
+			if path.Base(p) == el.File {
+				return false
+			}
+		}
 	}
 
 	// Catalog items are yaml files only.
@@ -294,12 +299,27 @@ func extendMergeListWithRelated(pAbs string, mergeList []Include) []Include {
 		Include{path: filepath.Join(filepath.Dir(pAbs), "description.html")},
 	)
 
+	done := map[string]bool{}
 	if config.initialized {
 		for _, el := range config.RelatedFiles {
+			if _, ok := done[el]; ok {
+				continue
+			}
 			result = append(
 				result,
 				Include{path: filepath.Join(filepath.Dir(pAbs), el)},
 			)
+			done[el] = true
+		}
+		for _, el := range config.RelatedFilesV2 {
+			if _, ok := done[el.File]; ok {
+				continue
+			}
+			result = append(
+				result,
+				Include{path: filepath.Join(filepath.Dir(pAbs), el.File)},
+			)
+			done[el.File] = true
 		}
 	}
 

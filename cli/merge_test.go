@@ -333,3 +333,33 @@ func TestMergeStrategicMergeList(t *testing.T) {
 		t.Error("lists do not match", value, expected)
 	}
 }
+
+func TestRelativeFileLoadInto(t *testing.T) {
+	rootFlag = abs("fixtures")
+	initConf(rootFlag)
+	initSchemaList()
+	initMergeStrategies()
+	validateFlag = true
+	merged, _, err := mergeVars(
+		"fixtures/test/BABYLON_EMPTY_CONFIG/prod.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, value, _, err := Get(merged, "/__meta__/service_ready")
+	if err != nil {
+		t.Error(err)
+	}
+	expected := map[string]any{
+		"format":        "jinja2",
+		"template":      "jinja2 content",
+		"output_format": "html",
+	}
+
+	if !reflect.DeepEqual(value, expected) {
+		t.Error("Values do not match", value, expected)
+	}
+
+}

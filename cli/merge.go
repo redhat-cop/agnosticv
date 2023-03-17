@@ -16,14 +16,6 @@ import (
 	"time"
 )
 
-// MergeStrategy type to define custom merge strategies.
-// Strategy: the name of the strategy
-// Path: the path in the structure of the vars to apply the strategy against.
-type MergeStrategy struct {
-	Strategy string `json:"strategy,omitempty" yaml:"strategy,omitempty"`
-	Path     string `json:"path,omitempty" yaml:"path,omitempty"`
-}
-
 // initMap initialize a map using a bunch of keys.
 func initMap(m map[string]any, keys []string) {
 	logDebug.Printf("(initMap) %v", keys)
@@ -398,6 +390,35 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 			mergeGitInfo["message"] = strings.SplitN(commit.Message, "\n", 10)[0]
 			if err := SetRelative(final, "/__meta__/last_update/git", mergeGitInfo); err != nil {
 				logErr.Fatalf("Error SetRelative: %v", err)
+			}
+		}
+	}
+
+	// Add related file content
+	if config.initialized {
+		for _, related := range config.RelatedFilesV2 {
+			if related.LoadInto != "" {
+				if related.ContentKey == "" {
+					logErr.Fatalf("Related file %s has no content key", related.File)
+				}
+				dir := filepath.Dir(p)
+				relatedPath := filepath.Join(dir, related.File)
+				if !fileExists(relatedPath) {
+					continue
+				}
+				content := map[string]any{}
+				for k, v := range related.Set {
+					content[k] = v
+				}
+				relatedContent, err := os.ReadFile(relatedPath)
+				if err != nil {
+					logErr.Fatalf("Error reading related file %s: %v", relatedPath, err)
+				}
+
+				content[related.ContentKey] = string(relatedContent)
+				if err := SetRelative(final, related.LoadInto, content); err != nil {
+					logErr.Fatalf("Error SetRelative: %v", err)
+				}
 			}
 		}
 	}
