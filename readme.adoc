@@ -321,10 +321,10 @@ __meta__:
   catalog:
     message_templates:
       service_ready:
+        format: jinja2
+        output_format: html
         template: |
           <<content of the file>>
-      format: jinja2
-      output_format: html
 ----
 
 === Leaf files ===
