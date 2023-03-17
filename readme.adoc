@@ -288,10 +288,13 @@ another_var: value <1>
 * All included files of a catalog item are automatically considered related files.
 * All common files of a catalog item are automatically considered related files.
 * It is possible to add custom related files using the config file; see section below.
+* It is possible to load related files into the merged vars using the config file; see section below.
 
 ==== Configuration ====
 
-You can add custom related files using the `related_files` configuration option in a `.agnosticv.yaml` configuration file. It contains a list of filenamesj that if present in the same directory of a catalog item, will be considered as related to that catalog item.
+You can add custom related files using the `related_files` configuration option in a `.agnosticv.yaml` configuration file. It contains a list of filenames that if present in the same directory of a catalog item, will be considered as related to that catalog item.
+
+You can decide to load the content of the relative file into a path by specifying the path as a link:https://www.rfc-editor.org/rfc/rfc6901[JSON Pointer] format. The destination path will be a dictionary and the content will be loaded into the 'content_key'.
 
 
 Here is an example of configuration:
@@ -300,10 +303,28 @@ Here is an example of configuration:
 [source,yaml]
 ----
 # For any catalog item, consider those files in same directory as related files:
-related_files:
-  - service-ready-message-template.html.j2
-  - service-ready-message-template.html
-  - description.txt
+related_files_v2:
+  - file: service-ready-message-template.html.j2
+    load_into: /__meta__/catalog/message_templates/service_ready
+    content_key: template
+    set:
+      format: jinja2
+      output_format: html
+  - file: description.txt
+----
+
+When merging, that will produce:
+
+[source,yaml]
+----
+__meta__:
+  catalog:
+    message_templates:
+      service_ready:
+        template: |
+          <<content of the file>>
+      format: jinja2
+      output_format: html
 ----
 
 === Leaf files ===
