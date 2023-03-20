@@ -75,12 +75,15 @@ func findMostRecentCommitCmd(p string, related []Include) *object.Commit {
 	cmd := exec.Command("git", args...)
 	logDebug.Println(cmd)
 
+	// Run git log from the directory of the catalog item
+	cmd.Dir = filepath.Dir(p)
+
 	var out bytes.Buffer
 	cmd.Stdout = &out
 
 	err := cmd.Run()
 	if err != nil {
-		logErr.Fatal(err)
+		logErr.Fatal("git log error:", err)
 	}
 
 	repo, err := git.PlainOpenWithOptions(p, &git.PlainOpenOptions{DetectDotGit: true})

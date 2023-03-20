@@ -35,6 +35,7 @@ var validateFlag bool
 var versionFlag bool
 var gitFlag bool
 var outputFlag string
+var dirFlag string
 
 // Build info
 var Version = "development"
@@ -64,6 +65,7 @@ func parseFlags(args []string, output io.Writer) controlFlow {
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	flags.SetOutput(output)
 	flags.BoolVar(&listFlag, "list", false, "List all the catalog items present in current directory.")
+	flags.StringVar(&dirFlag, "dir", "", "Directory to use as dir when listing catalog items. Default = current directory.")
 	flags.BoolVar(&validateFlag, "validate", true, "Validate variables against schemas present in .schemas directory.")
 	flags.Var(&relatedFlags, "related", `Use with --list only. Filter output and display only related catalog items.
 A catalog item is related to FILE if:
@@ -142,6 +144,35 @@ need this parameter unless your files are not in a git repository, or if you wan
 		outputFlag = "yaml"
 	}
 
+	if mergeFlag != "" && dirFlag != "" {
+		fmt.Fprintln(output, "You cannot use --merge and --dir simultaneously.")
+		return controlFlow{true, 2}
+	}
+	if dirFlag != "" {
+		// Ensure dir is a directory
+		fi, err := os.Stat(dirFlag)
+		if err != nil {
+			fmt.Fprintln(output, "Error:", err)
+			return controlFlow{true, 1}
+		}
+		if !fi.IsDir() {
+			fmt.Fprintln(output, "Error:", dirFlag, "is not a directory")
+			return controlFlow{true, 2}
+		}
+		dirFlag, err = filepath.Abs(dirFlag)
+		if err != nil {
+			fmt.Fprintln(output, "Error:", err)
+			return controlFlow{true, 1}
+		}
+	} else {
+		// Default to current directory
+		var err error
+		if dirFlag, err = os.Getwd(); err != nil {
+			fmt.Fprintln(output, "Error:", err)
+			return controlFlow{true, 1}
+		}
+	}
+
 	if rootFlag != "" {
 		if !fileExists(rootFlag) {
 			log.Fatalf("File %s does not exist", rootFlag)
@@ -151,21 +182,40 @@ need this parameter unless your files are not in a git repository, or if you wan
 	} else {
 		// init rootFlag by discovering depending on other flags
 		if listFlag {
-			// use current workdir
-			var workdir string
-			if wd, errWorkDir := os.Getwd(); errWorkDir == nil {
-				workdir = wd
+			if dirFlag != "" {
+				rootFlag = findRoot(dirFlag)
 			} else {
-				logErr.Fatal(errWorkDir)
+				// use current workdir to find root
+				var workdir string
+				if wd, errWorkDir := os.Getwd(); errWorkDir == nil {
+					workdir = wd
+				} else {
+					logErr.Fatal(errWorkDir)
+				}
+				rootFlag = findRoot(workdir)
 			}
-
-			rootFlag = findRoot(workdir)
 
 		} else if mergeFlag != "" {
 			// Use root of the file to merge
 			rootFlag = findRoot(mergeFlag)
 		}
 	}
+
+	// Validate rootflag is compatible with other flags
+	if listFlag {
+		// Ensure listing will be done inside root
+		absDir, err := filepath.Abs(dirFlag)
+		if err != nil {
+			fmt.Fprintln(output, "Error:", err)
+			return controlFlow{true, 1}
+		}
+
+		if !chrooted(rootFlag, absDir) {
+			fmt.Fprintln(output, "Error: --dir", dirFlag, "is not inside --root", rootFlag)
+			return controlFlow{true, 2}
+		}
+	}
+
 
 	// Do not perform git operations when listing
 	if listFlag {
@@ -335,6 +385,7 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 	if rootFlag == "" {
 		rootFlag = findRoot(workdir)
 	}
+
 	err := filepath.Walk(".", func(p string, info os.FileInfo, err error) error {
 		if err != nil {
 			logErr.Printf("%q: %v\n", p, err)
@@ -592,20 +643,12 @@ func main() {
 	initConf(rootFlag)
 	initMergeStrategies()
 
-	// Save current work directory
-	var workDir string
-	if wd, errWorkDir := os.Getwd(); errWorkDir == nil {
-		workDir = wd
-	} else {
-		logErr.Fatal(errWorkDir)
-	}
-
 	if len(schemas) == 0 {
 		initSchemaList()
 	}
 
 	if listFlag {
-		catalogItems, err := findCatalogItems(workDir, hasFlags, relatedFlags, orRelatedFlags)
+		catalogItems, err := findCatalogItems(dirFlag, hasFlags, relatedFlags, orRelatedFlags)
 
 		if err != nil {
 			logErr.Printf("error walking the path %q: %v\n", ".", err)
@@ -629,6 +672,14 @@ func main() {
 	}
 
 	if mergeFlag != "" {
+		// Get current work directory
+		var workDir string
+		if wd, errWorkDir := os.Getwd(); errWorkDir == nil {
+			workDir = wd
+		} else {
+			logErr.Fatal(errWorkDir)
+		}
+
 		merged, mergeList, err := mergeVars(mergeFlag, mergeStrategies)
 		if err != nil {
 			logErr.Fatal(err)
