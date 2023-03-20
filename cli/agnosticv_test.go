@@ -37,7 +37,7 @@ func TestParentDir(t *testing.T) {
 	}
 }
 
-func TestChrooted(t *testing.T) {
+func TestPathContains(t *testing.T) {
 	testCases := []struct {
 		root   string
 		path   string
@@ -101,7 +101,7 @@ func TestChrooted(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if tc.result != chrooted(tc.root, tc.path) {
+		if tc.result != pathContains(tc.root, tc.path) {
 			t.Error(tc.root, tc.path, tc.result)
 		}
 	}

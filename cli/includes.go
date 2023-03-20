@@ -205,7 +205,7 @@ func resolvePath(root string, includePath string, contextFile string) (string, e
 	}
 	result := filepath.Join(path.Dir(contextFile), filepath.Clean(includePath))
 
-	if !chrooted(root, result) {
+	if !pathContains(root, result) {
 		return "", ErrorIncludeOutOfChroot
 	}
 	return result, nil
