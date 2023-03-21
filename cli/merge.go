@@ -414,10 +414,22 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 				if err != nil {
 					logErr.Fatalf("Error reading related file %s: %v", relatedPath, err)
 				}
+				temp := map[string]any{}
 
 				content[related.ContentKey] = string(relatedContent)
-				if err := SetRelative(final, related.LoadInto, content); err != nil {
+				if err := SetRelative(temp, related.LoadInto, content); err != nil {
 					logErr.Fatalf("Error SetRelative: %v", err)
+				}
+
+				// Merge temp into final using mergo
+				if err := mergo.Merge(
+					&final,
+					temp,
+					mergo.WithOverride,
+					mergo.WithOverwriteWithEmptyValue,
+					mergo.WithAppendSlice,
+				); err != nil {
+					return final, mergeList, err
 				}
 			}
 		}
