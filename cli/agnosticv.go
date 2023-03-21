@@ -164,6 +164,9 @@ need this parameter unless your files are not in a git repository, or if you wan
 			fmt.Fprintln(output, "Error:", err)
 			return controlFlow{true, 1}
 		}
+		
+		dirFlag = filepath.Clean(dirFlag) // line to clean dirFlag
+		
 	} else {
 		// Default to current directory
 		var err error
