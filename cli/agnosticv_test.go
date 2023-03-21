@@ -2,6 +2,7 @@ package main
 
 import (
 	"io"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -608,5 +609,23 @@ func TestFindRoot(t *testing.T) {
 		if result != tc.result {
 			t.Error("with", tc.path, ":", result, "!=", tc.result)
 		}
+	}
+}
+
+func TestLoadInto(t *testing.T) {
+	rootFlag = abs("fixtures")
+	initConf(rootFlag)
+	validateFlag = true
+	initSchemaList()
+	m, _, _ := mergeVars("fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml", mergeStrategies)
+	_, value, _, _ := Get(m, "/__meta__/catalog")
+
+	// Ensure other keys are still there
+	// 3 keys initially, including .description that will be overriden
+	// +1 key from the related_file load_into (descriptionFormat)
+	// 3 + 1 = 4
+	elems := len(value.(map[string]any))
+	if elems != 4 {
+		t.Error("__meta__.catalog should have 4 keys after merging, found", elems)
 	}
 }
