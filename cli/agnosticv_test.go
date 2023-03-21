@@ -101,7 +101,7 @@ func TestPathContains(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		if tc.result != pathContains(tc.root, tc.path) {
+		if tc.result != isRoot(tc.root, tc.path) {
 			t.Error(tc.root, tc.path, tc.result)
 		}
 	}

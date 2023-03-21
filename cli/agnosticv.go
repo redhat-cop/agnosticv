@@ -210,7 +210,7 @@ need this parameter unless your files are not in a git repository, or if you wan
 			return controlFlow{true, 1}
 		}
 
-		if !pathContains(rootFlag, absDir) {
+		if !isRoot(rootFlag, absDir) {
 			fmt.Fprintln(output, "Error: --dir", dirFlag, "is not inside --root", rootFlag)
 			return controlFlow{true, 2}
 		}
@@ -250,7 +250,7 @@ func isPathCatalogItem(root, p string) bool {
 		return false
 	}
 
-	if !pathContains(root, p) {
+	if !isRoot(root, p) {
 		return false
 	}
 
@@ -526,10 +526,10 @@ func parentDir(path string) string {
 	return filepath.Dir(currentDir)
 }
 
-// pathContains function compares strings and returns true if
+// isRoot function compares strings and returns true if
 // path is contained in root.
 // It's a poor man's chroot
-func pathContains(root string, path string) bool {
+func isRoot(root string, path string) bool {
 	if root == path {
 		return true
 	}
@@ -591,7 +591,7 @@ func nextCommonFile(position string) string {
 	for _, commonFile := range validCommonFileNames {
 		if path.Base(position) == commonFile {
 			// If parent is out of chroot, stop
-			if !pathContains(rootFlag, parentDir(position)) {
+			if !isRoot(rootFlag, parentDir(position)) {
 				logDebug.Println("parent of", position, ",", parentDir(position),
 					"is out of chroot", rootFlag)
 				return ""
@@ -625,7 +625,7 @@ func nextCommonFile(position string) string {
 	}
 
 	// If parent is out of chroot, stop
-	if !pathContains(rootFlag, parentDir(position)) {
+	if !isRoot(rootFlag, parentDir(position)) {
 		logDebug.Println("parent of", position, ",", parentDir(position),
 			"is out of chroot", rootFlag)
 		return ""
