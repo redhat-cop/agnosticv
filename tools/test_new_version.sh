@@ -22,7 +22,7 @@ cd ${1}
 cli1="${2}"
 cli2="${3}"
 
-echo -n "Testing listing ......................."
+echo -n "listing ......................."
 diff -u <($cli1 --list) <($cli2 --list)
 if [ $? != 0 ]; then
 	echo >&2 "Listing is not the same"
@@ -32,7 +32,7 @@ echo OK
 
 for dir in *; do
     if [ -d $dir ]; then
-        echo -n "Testing listing in ${dir}......................."
+        printf "%-80s" "listing in ${dir}"
         cd "${dir}"
         diff -u <($cli1 --list) <($cli2 --list)
         if [ $? != 0 ]; then
@@ -40,6 +40,18 @@ for dir in *; do
             exit 2
         fi
         echo OK
+
+        if $cli1 --help | grep '\-dir string' -q; then
+            cd /tmp
+            printf "%-80s" "from oustide ${dir} with --dir"
+            diff -u <($cli1 --list --dir "${dir}") <($cli2 --list --dir "${dir}")
+            if [ $? != 0 ]; then
+                echo >&2 "Listing is not the same"
+                exit 2
+            fi
+            echo OK
+        fi
+
         cd ${1}
     fi
 done
@@ -50,7 +62,7 @@ if [ $? != 0 ]; then
 	exit 2
 fi
 for ci in $($cli1 --list); do
-	echo -n "testing merge $ci ......................."
+	printf "%-80s" "merge $ci"
 
 	diff -u <($cli1 --merge $ci) <($cli2 --merge $ci) > /dev/null
 	if [ $? != 0 ]; then
@@ -61,7 +73,7 @@ for ci in $($cli1 --list); do
 
 	echo YES
 
-	echo -n "testing merge $ci JSON ......................."
+	printf "%-80s" "merge $ci JSON"
     if ! $cli2 --merge $ci --output json | jq . > /dev/null; then
         echo NO
     else
@@ -70,7 +82,7 @@ for ci in $($cli1 --list); do
 done
 
 for fil in $(find -name common.yaml) $(find -name account.yaml) $(find includes -type f); do
-	echo -n "testing related files $fil ......................."
+	printf "%-80s" "related files $fil"
 	diff -u <($cli1 --list --related $fil) <($cli2 --list --related $fil) > /dev/null
 	if [ $? != 0 ]; then
 		echo "NO"

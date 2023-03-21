@@ -96,6 +96,35 @@ func TestFlag(t *testing.T) {
 			description: "-output and -merge, yaml output",
 			result:      controlFlow{false, 0},
 		},
+		{
+			args: []string{"agnosticv",
+				"--merge", "fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml",
+				"--dir", "/tmp/repo"},
+			description: "-dir and -merge should fail",
+			result:      controlFlow{true, 2},
+		},
+		{
+			args: []string{"agnosticv",
+				"--list",
+				"--dir", "/tmp/doesntexist"},
+			description: "-list and -dir with a dir that doesn't exist",
+			result:      controlFlow{true, 1},
+		},
+		{
+			args: []string{"agnosticv",
+				"--list",
+				"--dir", "fixtures"},
+			description: "-list and -dir",
+			result:      controlFlow{false, 0},
+		},
+		{
+			args: []string{"agnosticv",
+				"--list",
+				"--root", "fixtures",
+				"--dir", "."},
+			description: "-dir is outside -root",
+			result:      controlFlow{true, 2},
+		},
 	}
 
 	for _, tc := range testCases {
