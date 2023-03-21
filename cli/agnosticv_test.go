@@ -311,7 +311,7 @@ func TestWalk(t *testing.T) {
 		{
 			description: "Is a Babylon catalog item",
 			hasFlags:    []string{"__meta__.catalog"},
-			count:       5,
+			count:       7,
 		},
 		{
 			description: "env_type is clientvm and purpose is development",
