@@ -387,7 +387,11 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 		return result, err
 	}
 	// Restore the current directory at the end of the function
-	defer os.Chdir(prevDir)
+	defer func() {
+		if err := os.Chdir(prevDir); err != nil {
+			logErr.Printf("%v\n", err)
+		}
+	}()
 
 	if rootFlag == "" {
 		rootFlag = findRoot(workdir)

@@ -243,7 +243,11 @@ func TestIsPathCatalogItem(t *testing.T) {
 func TestWalk(t *testing.T) {
 	prevDir, _ := os.Getwd()
 	// Restore the current directory at the end of the function
-	defer os.Chdir(prevDir)
+	defer func() {
+		if err := os.Chdir(prevDir); err != nil {
+			logErr.Printf("%v\n", err)
+		}
+	}()
 
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
