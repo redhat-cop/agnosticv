@@ -396,40 +396,46 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 
 	// Add related file content
 	if config.initialized {
-		for _, related := range config.RelatedFilesV2 {
-			if related.LoadInto != "" {
-				if related.ContentKey == "" {
-					logErr.Fatalf("Related file %s has no content key", related.File)
-				}
-				dir := filepath.Dir(p)
-				relatedPath := filepath.Join(dir, related.File)
-				if !fileExists(relatedPath) {
-					continue
-				}
-				content := map[string]any{}
-				for k, v := range related.Set {
-					content[k] = v
-				}
-				relatedContent, err := os.ReadFile(relatedPath)
-				if err != nil {
-					logErr.Fatalf("Error reading related file %s: %v", relatedPath, err)
-				}
-				temp := map[string]any{}
+		for _, include := range mergeList {
+			if !isCatalogItem(rootFlag, include.path) {
+				continue
+			}
 
-				content[related.ContentKey] = string(relatedContent)
-				if err := SetRelative(temp, related.LoadInto, content); err != nil {
-					logErr.Fatalf("Error SetRelative: %v", err)
-				}
+			for _, related := range config.RelatedFilesV2 {
+				if related.LoadInto != "" {
+					if related.ContentKey == "" {
+						logErr.Fatalf("Related file %s has no content key", related.File)
+					}
+					dir := filepath.Dir(include.path)
+					relatedPath := filepath.Join(dir, related.File)
+					if !fileExists(relatedPath) {
+						continue
+					}
+					content := map[string]any{}
+					for k, v := range related.Set {
+						content[k] = v
+					}
+					relatedContent, err := os.ReadFile(relatedPath)
+					if err != nil {
+						logErr.Fatalf("Error reading related file %s: %v", relatedPath, err)
+					}
+					temp := map[string]any{}
 
-				// Merge temp into final using mergo
-				if err := mergo.Merge(
-					&final,
-					temp,
-					mergo.WithOverride,
-					mergo.WithOverwriteWithEmptyValue,
-					mergo.WithAppendSlice,
-				); err != nil {
-					return final, mergeList, err
+					content[related.ContentKey] = string(relatedContent)
+					if err := SetRelative(temp, related.LoadInto, content); err != nil {
+						logErr.Fatalf("Error SetRelative: %v", err)
+					}
+
+					// Merge temp into final using mergo
+					if err := mergo.Merge(
+						&final,
+						temp,
+						mergo.WithOverride,
+						mergo.WithOverwriteWithEmptyValue,
+						mergo.WithAppendSlice,
+					); err != nil {
+						return final, mergeList, err
+					}
 				}
 			}
 		}
