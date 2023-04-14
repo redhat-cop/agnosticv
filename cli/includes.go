@@ -185,7 +185,7 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 				return []Include{}, done, err
 			}
 
-			innerIncludes := []Include{}
+			var innerIncludes []Include
 			var innerDone map[string]bool
 			if isCatalogItem(rootFlag, include.path) {
 				innerIncludes, err = getMergeList(include.path)
