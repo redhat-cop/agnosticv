@@ -178,6 +178,29 @@ func BenchmarkMergeJSON(b *testing.B) {
 	}
 }
 
+func TestMergeCatalogItemIncluded(t *testing.T) {
+	initLoggers()
+	rootFlag = abs("fixtures")
+	initConf(rootFlag)
+	initSchemaList()
+	initMergeStrategies()
+	validateFlag = true
+	merged, _, err := mergeVars(
+		"fixtures/test/foo/prod.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, value, _, err := Get(merged, "/__meta__/catalog/description")
+	if err != nil {
+		t.Error(err)
+	}
+	if value != "from description.adoc\n" {
+		t.Error("description is not 'from description.adoc'", value)
+	}
+}
 func TestMerge(t *testing.T) {
 	initLoggers()
 	rootFlag = abs("fixtures")

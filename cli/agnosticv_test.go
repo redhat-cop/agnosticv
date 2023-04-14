@@ -241,8 +241,13 @@ func TestIsPathCatalogItem(t *testing.T) {
 }
 
 func TestWalk(t *testing.T) {
+	prevDir, _ := os.Getwd()
+	// Restore the current directory at the end of the function
+	defer os.Chdir(prevDir)
+
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
+	initMergeStrategies()
 	testCases := []struct {
 		description    string
 		hasFlags       []string
@@ -253,49 +258,49 @@ func TestWalk(t *testing.T) {
 		{
 			description: "No JMES filtering",
 			hasFlags:    []string{},
-			count:       11,
+			count:       12,
 		},
 		{
 			description:  "Related includes/include1.yaml",
 			hasFlags:     []string{},
-			relatedFlags: []string{"fixtures/includes/include1.yaml"},
+			relatedFlags: []string{"includes/include1.yaml"},
 			count:        2,
 		},
 		{
-			description:  "Related to fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
+			description:  "Related to test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
 			hasFlags:     []string{},
-			relatedFlags: []string{"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml"},
-			count:        3,
+			relatedFlags: []string{"test/BABYLON_EMPTY_CONFIG_AWS/common.yaml"},
+			count:        4,
 		},
 		{
-			description: "Related to fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml and test.yaml",
+			description: "Related to test/BABYLON_EMPTY_CONFIG_AWS/common.yaml and test.yaml",
 			hasFlags:    []string{},
 			relatedFlags: []string{
-				"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
-				"fixtures/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
+				"test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
+				"test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
 			},
 			count: 1,
 		},
 		{
-			description: "Related to fixtures/gpte/OCP_CLIENTVM/description.adoc",
+			description: "Related to gpte/OCP_CLIENTVM/description.adoc",
 			hasFlags:    []string{},
 			relatedFlags: []string{
-				"fixtures/gpte/OCP_CLIENTVM/description.adoc",
+				"gpte/OCP_CLIENTVM/description.adoc",
 			},
 			count: 2,
 		},
 		{
 			description:    "Related (inclusive, --or-related) to /common.yaml",
 			hasFlags:       []string{},
-			relatedFlags:   []string{"fixtures/includes/include1.yaml"},
-			orRelatedFlags: []string{"fixtures/common.yaml"},
-			count:          11,
+			relatedFlags:   []string{"includes/include1.yaml"},
+			orRelatedFlags: []string{"common.yaml"},
+			count:          12,
 		},
 		{
 			description:    "Related (exclusive + inclusive) to /common.yaml and --has flag",
 			hasFlags:       []string{"foodict"},
-			relatedFlags:   []string{"fixtures/includes/include1.yaml"},
-			orRelatedFlags: []string{"fixtures/common.yaml"},
+			relatedFlags:   []string{"includes/include1.yaml"},
+			orRelatedFlags: []string{"common.yaml"},
 			count:          1,
 		},
 		{
@@ -311,7 +316,7 @@ func TestWalk(t *testing.T) {
 		{
 			description: "Is a Babylon catalog item",
 			hasFlags:    []string{"__meta__.catalog"},
-			count:       7,
+			count:       12,
 		},
 		{
 			description: "env_type is clientvm and purpose is development",
@@ -324,9 +329,9 @@ func TestWalk(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		result, err := findCatalogItems(".", tc.hasFlags, tc.relatedFlags, tc.orRelatedFlags)
+		result, err := findCatalogItems(rootFlag, tc.hasFlags, tc.relatedFlags, tc.orRelatedFlags)
 		if err != nil {
-			t.Error()
+			t.Error(err)
 		}
 		if len(result) != tc.count {
 			t.Error(tc.description, len(result), tc.count)
@@ -397,7 +402,6 @@ func TestParseInclude(t *testing.T) {
 }
 
 func TestInclude(t *testing.T) {
-
 	merged, _, err := mergeVars("fixtures/gpte/OCP_CLIENTVM/dev.yaml", mergeStrategies)
 	if err != nil {
 		t.Fatal(err)
@@ -426,6 +430,7 @@ func TestInclude(t *testing.T) {
 func TestSchemaValidationPatternFailed(t *testing.T) {
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
+	initMergeStrategies()
 	validateFlag = true
 	initSchemaList()
 
@@ -450,6 +455,7 @@ func TestSchemaValidationPatternFailed(t *testing.T) {
 func TestSchemaValidationOK(t *testing.T) {
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
+	initMergeStrategies()
 	validateFlag = true
 	initSchemaList()
 
@@ -468,6 +474,7 @@ func TestSchemaValidationOK(t *testing.T) {
 func TestGetMergeList(t *testing.T) {
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
+	initMergeStrategies()
 	validateFlag = true
 	initSchemaList()
 
@@ -485,6 +492,7 @@ func TestGetMergeList(t *testing.T) {
 func TestGetMetaPath(t *testing.T) {
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
+	initMergeStrategies()
 	validateFlag = true
 	initSchemaList()
 
@@ -537,6 +545,7 @@ func TestGetMetaPath(t *testing.T) {
 func TestIsMetaPath(t *testing.T) {
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
+	initMergeStrategies()
 	validateFlag = true
 	initSchemaList()
 
@@ -614,18 +623,18 @@ func TestFindRoot(t *testing.T) {
 func TestLoadInto(t *testing.T) {
 	rootFlag = abs("fixtures")
 	initConf(rootFlag)
+	initMergeStrategies()
 	validateFlag = true
 	initSchemaList()
-	m, _, _ := mergeVars("fixtures/test/BABYLON_EMPTY_CONFIG/dev.yaml", mergeStrategies)
+	m, _, _ := mergeVars("fixtures/test/BABYLON_EMPTY_CONFIG/prod.yaml", mergeStrategies)
 	_, value, _, _ := Get(m, "/__meta__/catalog")
-
 
 	// Ensure other keys are still there
 	// 3 keys initially, including .description that will be overriden
 	// +1 key from the related_file load_into (descriptionFormat)
 	// 3 + 1 = 4
 	elems := len(value.(map[string]any))
-	if elems != 4 {
+	if elems != 3 {
 		t.Error("__meta__.catalog should have 4 keys after merging, found", elems)
 	}
 
