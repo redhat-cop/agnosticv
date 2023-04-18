@@ -184,11 +184,22 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 			if err != nil {
 				return []Include{}, done, err
 			}
-			innerIncludes, innerDone, err := parseAllIncludes(include.path, done)
-			done = innerDone
 
-			if err != nil {
-				return []Include{}, done, err
+			var innerIncludes []Include
+			var innerDone map[string]bool
+			if isCatalogItem(rootFlag, include.path) {
+				innerIncludes, err = getMergeList(include.path)
+				// Remove last element, which is the current file
+				innerIncludes = innerIncludes[:len(innerIncludes)-1]
+				if err != nil {
+					return []Include{}, done, err
+				}
+			} else {
+				innerIncludes, innerDone, err = parseAllIncludes(include.path, done)
+				done = innerDone
+				if err != nil {
+					return []Include{}, done, err
+				}
 			}
 
 			innerIncludes = append(innerIncludes, include)

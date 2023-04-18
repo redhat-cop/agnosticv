@@ -164,9 +164,9 @@ need this parameter unless your files are not in a git repository, or if you wan
 			fmt.Fprintln(output, "Error:", err)
 			return controlFlow{true, 1}
 		}
-		
+
 		dirFlag = filepath.Clean(dirFlag) // line to clean dirFlag
-		
+
 	} else {
 		// Default to current directory
 		var err error
@@ -218,7 +218,6 @@ need this parameter unless your files are not in a git repository, or if you wan
 			return controlFlow{true, 2}
 		}
 	}
-
 
 	// Do not perform git operations when listing
 	if listFlag {
@@ -382,9 +381,18 @@ func extendMergeListWithRelated(pAbs string, mergeList []Include) []Include {
 func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, orRelatedFlags []string) ([]string, error) {
 	logDebug.Println("findCatalogItems(", workdir, hasFlags, ")")
 	result := []string{}
+	// save current dir
+	prevDir, _ := os.Getwd()
 	if err := os.Chdir(workdir); err != nil {
 		return result, err
 	}
+	// Restore the current directory at the end of the function
+	defer func() {
+		if err := os.Chdir(prevDir); err != nil {
+			logErr.Printf("%v\n", err)
+		}
+	}()
+
 	if rootFlag == "" {
 		rootFlag = findRoot(workdir)
 	}
