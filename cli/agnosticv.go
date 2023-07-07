@@ -85,14 +85,19 @@ Example:
    List all catalog items under dir/ and also all catalog items that include includes/foo.yaml
 
 Can be used several times (act like OR).`)
-	flags.Var(&hasFlags, "has", `Use with --list only. Filter catalog items using a JMESPath expression.
+	const hasHelp ="Use with --list only. Filter catalog items using a JMESPath `expression`."+`
 Can be used several times (act like AND).
 
 Examples:
 --has __meta__.catalog
+# Compare a variable value
 --has "env_type == 'ocp-clientvm'"
---has "to_string(worker_instance_count) == '2'"
-`)
+# Compare a variable numeric value
+--has 'worker_instance_count == `+"`2`"+`'
+# List all catalog items with a secret named 'gpte-sandbox'
+--has 'length(__meta__.secrets[?name=='\''gpte-sandbox'\'']) > `+"`0`"+`'
+`
+	flags.Var(&hasFlags, "has", hasHelp)
 	flags.BoolVar(&debugFlag, "debug", false, "Debug mode")
 	flags.StringVar(&mergeFlag, "merge", "", "Merge and print variables of a catalog item.")
 	flags.StringVar(&rootFlag, "root", "", `The top directory of the agnosticv files. Files outside of this directory will not be merged.
