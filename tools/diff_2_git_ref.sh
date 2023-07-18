@@ -3,11 +3,11 @@
 usage() {
     echo "$0 REPO_PATH CLI REV1 REV2"
     echo
-    echo "Compare 2 different revisions of an agnosticV repo with an agnosticv CLI."
+    echo "Compare 2 revisions of an agnosticV repo with agnosticv CLI."
     echo
     echo "EXAMPLE"
     echo "cd agnosticv"
-    echo "$0 ~/agnosticv ~/bin/agnosticv.v0.3.2 master GPTEINFRA-3125"
+    echo "$0 ~/agnosticv ~/bin/agnosticv.v0.7.1 master GPTEINFRA-3125"
 
     exit 2
 
