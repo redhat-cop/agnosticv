@@ -26,6 +26,16 @@ rev2=${4}
 
 cd ${maindir}
 
+ORIGREV=$(git rev-parse --abbrev-ref HEAD)
+_on_exit() {
+    local exit_status=${1:-$?}
+    cd ${maindir}
+    git checkout ${ORIGREV} &> /dev/null
+    exit $exit_status
+}
+
+trap "_on_exit" EXIT
+
 echo "testing revisions"
 git checkout ${rev1}
 git checkout ${rev2}
@@ -77,13 +87,13 @@ for ci in $($cli --list); do
 	printf "%-80s" "merge $ci"
 
     git checkout ${rev1} &> /dev/null
-    $cli --merge $ci |sed '/^#/d' > /tmp/merge1
+    $cli -git=false --merge $ci |sed '/^#/d' > /tmp/merge1
     git checkout ${rev2} &> /dev/null
-    $cli --merge $ci |sed '/^#/d' > /tmp/merge2
+    $cli -git=false --merge $ci |sed '/^#/d' > /tmp/merge2
 	if ! diff -u /tmp/merge1 /tmp/merge2; then
-		echo "NO"
+		echo "CHANGE"
 		#exit 2
 	fi
 
-	echo YES
+	echo OK
 done
