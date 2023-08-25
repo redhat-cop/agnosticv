@@ -262,7 +262,7 @@ func TestWalk(t *testing.T) {
 		{
 			description: "No JMES filtering",
 			hasFlags:    []string{},
-			count:       12,
+			count:       13,
 		},
 		{
 			description:  "Related includes/include1.yaml",
@@ -298,7 +298,7 @@ func TestWalk(t *testing.T) {
 			hasFlags:       []string{},
 			relatedFlags:   []string{"includes/include1.yaml"},
 			orRelatedFlags: []string{"common.yaml"},
-			count:          12,
+			count:          13,
 		},
 		{
 			description:    "Related (exclusive + inclusive) to /common.yaml and --has flag",
@@ -320,7 +320,7 @@ func TestWalk(t *testing.T) {
 		{
 			description: "Is a Babylon catalog item",
 			hasFlags:    []string{"__meta__.catalog"},
-			count:       12,
+			count:       13,
 		},
 		{
 			description: "env_type is clientvm and purpose is development",

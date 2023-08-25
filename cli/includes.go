@@ -203,7 +203,7 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 			}
 
 			innerIncludes = append(innerIncludes, include)
-			result = append(innerIncludes, result...)
+			result = append(result, innerIncludes...)
 		}
 	}
 	return result, done, nil

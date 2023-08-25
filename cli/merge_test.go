@@ -201,6 +201,39 @@ func TestMergeCatalogItemIncluded(t *testing.T) {
 		t.Error("description is not 'from description.adoc'", value)
 	}
 }
+
+func TestMergeCatalogItemIncludedWithOrder(t *testing.T) {
+	initLoggers()
+	rootFlag = abs("fixtures")
+	initConf(rootFlag)
+	initSchemaList()
+	initMergeStrategies()
+	validateFlag = true
+	merged, _, err := mergeVars(
+		"fixtures/test/foo/order.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, value, _, err := Get(merged, "/foo")
+	if err != nil {
+		t.Error(err)
+	}
+	if value != "include3" {
+		t.Error("foo should be 'include3'", value)
+	}
+
+	_, value, _, err = Get(merged, "/bar")
+	if err != nil {
+		t.Error(err)
+	}
+	if value != "order.yaml" {
+		t.Error("bar should be 'order.yaml'", value)
+	}
+}
+
 func TestMerge(t *testing.T) {
 	initLoggers()
 	rootFlag = abs("fixtures")
@@ -256,10 +289,10 @@ func TestMerge(t *testing.T) {
 		"/common.yaml",
 		"/test/account.yaml",
 		"/test/BABYLON_EMPTY_CONFIG_AWS/common.yaml",
-		"/includes/include2.meta.yml",
 		"/includes/include1.meta.yaml",
 		"/includes/include1.yaml",
 		"/test/BABYLON_EMPTY_CONFIG_AWS/test.meta.yaml",
+		"/includes/include2.meta.yml",
 		"/test/BABYLON_EMPTY_CONFIG_AWS/test.yaml",
 	}
 	for i, v := range expectedMergeList {
@@ -282,6 +315,33 @@ func TestMerge(t *testing.T) {
 	found, value, _, err = Get(merged, "/__meta__/from_include1_meta")
 	if !found || err != nil || value != "value1" {
 		t.Error("/__meta__/from_include1_meta  be merged from detected meta")
+	}
+
+	_, includeList, err = mergeVars(
+		"fixtures/test/foo/order.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expectedMergeList = []string{
+		"/common.yaml",
+		"/test/account.yaml",
+		"/includes/order1.yaml",
+		"/includes/order21.yaml",
+		"/includes/order22.yaml",
+		"/includes/order23.yaml",
+		"/includes/order2.yaml",
+		"/includes/order3.yaml",
+		"/test/foo/order.yaml",
+	}
+	for i, v := range expectedMergeList {
+		if !strings.HasSuffix(includeList[i].path, v) {
+			t.Error(v, "not at the position", i, "in the merge list of ",
+				"fixtures/test/foo/order.yaml",
+				"found", includeList[i].path, "instead")
+		}
 	}
 }
 
