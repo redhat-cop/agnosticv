@@ -234,7 +234,6 @@ func TestMergeCatalogItemIncludedWithOrder(t *testing.T) {
 	}
 }
 
-
 func TestMerge(t *testing.T) {
 	initLoggers()
 	rootFlag = abs("fixtures")
@@ -318,7 +317,7 @@ func TestMerge(t *testing.T) {
 		t.Error("/__meta__/from_include1_meta  be merged from detected meta")
 	}
 
-	merged, includeList, err = mergeVars(
+	_, includeList, err = mergeVars(
 		"fixtures/test/foo/order.yaml",
 		mergeStrategies,
 	)
@@ -336,7 +335,6 @@ func TestMerge(t *testing.T) {
 		"/includes/order2.yaml",
 		"/includes/order3.yaml",
 		"/test/foo/order.yaml",
-
 	}
 	for i, v := range expectedMergeList {
 		if !strings.HasSuffix(includeList[i].path, v) {
