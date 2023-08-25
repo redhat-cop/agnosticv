@@ -1,0 +1,6 @@
+---
+#include order21.yaml
+#include order22.yaml
+#include order23.yaml
+foo: include2
+bar: include2
