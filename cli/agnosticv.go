@@ -424,6 +424,80 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 			return nil
 		}
 
+		if len(relatedFlags) > 0 || len(orRelatedFlags) > 0 {
+			mergeList, err := getMergeList(pAbs)
+			related := extendMergeListWithRelated(pAbs, mergeList)
+
+			logDebug.Println("getMergeList(", pAbs, ") =", mergeList)
+			logDebug.Println("related =", related)
+			if err != nil {
+				logErr.Printf("%v\n", err)
+				return nil
+			}
+
+			// related files, inclusive version
+			if len(orRelatedFlags) > 0 {
+				for _, orRelatedFlag := range orRelatedFlags {
+
+					orRelatedAbs, err := filepath.Abs(orRelatedFlag)
+					if err != nil {
+						logErr.Printf("%v\n", err)
+						return nil
+					}
+
+					if containsPath(related, orRelatedAbs) {
+						if len(hasFlags) > 0 {
+							logDebug.Println("hasFlags", hasFlags)
+							// Here we need yaml.v3 in order to use jmespath
+							merged, _, err := mergeVars(p, mergeStrategies)
+							if err != nil {
+								// Print the error and move to next file
+								logErr.Println(err)
+								return nil
+							}
+
+							for _, hasFlag := range hasFlags {
+								r, err := jmespath.Search(hasFlag, merged)
+								if err != nil {
+									logErr.Printf("ERROR: JMESPath '%q' not correct, %v", hasFlag, err)
+									return err
+								}
+
+								logDebug.Printf("merged=%#v\n", merged)
+								logDebug.Printf("r=%#v\n", r)
+
+								// If JMESPath expression does not match, skip file
+								if r == nil || r == false {
+									return nil
+								}
+							}
+						}
+						// Add catalog item to result
+						result = append(result, p)
+						return nil
+					}
+				}
+			}
+
+			// related files, exclusive version
+			if len(relatedFlags) > 0 {
+				for _, relatedFlag := range relatedFlags {
+
+					relatedAbs, err := filepath.Abs(relatedFlag)
+					if err != nil {
+						logErr.Printf("%v\n", err)
+						return nil
+					}
+
+					if !containsPath(related, relatedAbs) {
+						// If not related, do not select catalog item
+						return nil
+					}
+
+				}
+			}
+		}
+
 		if len(hasFlags) > 0 {
 			logDebug.Println("hasFlags", hasFlags)
 			// Here we need yaml.v3 in order to use jmespath
@@ -447,54 +521,6 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 				// If JMESPath expression does not match, skip file
 				if r == nil || r == false {
 					return nil
-				}
-			}
-		}
-
-		if len(relatedFlags) > 0 || len(orRelatedFlags) > 0 {
-			mergeList, err := getMergeList(pAbs)
-			related := extendMergeListWithRelated(pAbs, mergeList)
-
-			logDebug.Println("getMergeList(", pAbs, ") =", mergeList)
-			logDebug.Println("related =", related)
-			if err != nil {
-				logErr.Printf("%v\n", err)
-				return nil
-			}
-
-			// related files, inclusive version
-			if len(orRelatedFlags) > 0 {
-				for _, orRelatedFlag := range orRelatedFlags {
-
-					orRelatedAbs, err := filepath.Abs(orRelatedFlag)
-					if err != nil {
-						logErr.Printf("%v\n", err)
-						return nil
-					}
-
-					if containsPath(related, orRelatedAbs) {
-						// Add catalog item to result
-						result = append(result, p)
-						return nil
-					}
-				}
-			}
-
-			// related files, exclusive version
-			if len(relatedFlags) > 0 {
-				for _, relatedFlag := range relatedFlags {
-
-					relatedAbs, err := filepath.Abs(relatedFlag)
-					if err != nil {
-						logErr.Printf("%v\n", err)
-						return nil
-					}
-
-					if !containsPath(related, relatedAbs) {
-						// If not related, do not select catalog item
-						return nil
-					}
-
 				}
 			}
 		}
