@@ -424,33 +424,6 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 			return nil
 		}
 
-		if len(hasFlags) > 0 {
-			logDebug.Println("hasFlags", hasFlags)
-			// Here we need yaml.v3 in order to use jmespath
-			merged, _, err := mergeVars(p, mergeStrategies)
-			if err != nil {
-				// Print the error and move to next file
-				logErr.Println(err)
-				return nil
-			}
-
-			for _, hasFlag := range hasFlags {
-				r, err := jmespath.Search(hasFlag, merged)
-				if err != nil {
-					logErr.Printf("ERROR: JMESPath '%q' not correct, %v", hasFlag, err)
-					return err
-				}
-
-				logDebug.Printf("merged=%#v\n", merged)
-				logDebug.Printf("r=%#v\n", r)
-
-				// If JMESPath expression does not match, skip file
-				if r == nil || r == false {
-					return nil
-				}
-			}
-		}
-
 		if len(relatedFlags) > 0 || len(orRelatedFlags) > 0 {
 			mergeList, err := getMergeList(pAbs)
 			related := extendMergeListWithRelated(pAbs, mergeList)
@@ -495,6 +468,33 @@ func findCatalogItems(workdir string, hasFlags []string, relatedFlags []string, 
 						return nil
 					}
 
+				}
+			}
+		}
+
+		if len(hasFlags) > 0 {
+			logDebug.Println("hasFlags", hasFlags)
+			// Here we need yaml.v3 in order to use jmespath
+			merged, _, err := mergeVars(p, mergeStrategies)
+			if err != nil {
+				// Print the error and move to next file
+				logErr.Println(err)
+				return nil
+			}
+
+			for _, hasFlag := range hasFlags {
+				r, err := jmespath.Search(hasFlag, merged)
+				if err != nil {
+					logErr.Printf("ERROR: JMESPath '%q' not correct, %v", hasFlag, err)
+					return err
+				}
+
+				logDebug.Printf("merged=%#v\n", merged)
+				logDebug.Printf("r=%#v\n", r)
+
+				// If JMESPath expression does not match, skip file
+				if r == nil || r == false {
+					return nil
 				}
 			}
 		}
