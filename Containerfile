@@ -40,7 +40,7 @@ RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir \
     pyaml \
     retry \
-    requests \
+    requests
 
 RUN rm -rf /tmp/* /root/.cache /root/*
 USER ${USER_UID}
