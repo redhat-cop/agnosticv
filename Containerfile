@@ -37,7 +37,7 @@ RUN alternatives --set python /usr/bin/python3.9 \
     && alternatives --install /usr/bin/pip pip /usr/bin/pip3.9 1
 RUN pip install --no-cache-dir --upgrade pip
 
-RUN pip3 install \
+RUN pip install --no-cache-dir \
     pyaml \
     retry \
     requests \
