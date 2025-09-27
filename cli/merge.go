@@ -472,44 +472,17 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 				return map[string]any{}, []Include{}, err
 			}
 
-			// For inserts, we do selective merging for __meta__ section
+			// For inserts, add content while preserving local variables
 			for k, v := range insertData {
+				// For __meta__ section, merge fields but preserve existing ones
 				if k == "__meta__" {
-					// For __meta__ section, merge specific fields while preserving critical ones
 					if existingMeta, exists := final[k]; exists {
 						if existingMetaMap, ok := existingMeta.(map[string]any); ok {
 							if newMetaMap, ok := v.(map[string]any); ok {
-								// Fields to preserve from existing (don't overwrite)
-								preserveFields := []string{"asset_uuid", "components", "catalog", "anarchy", "ansible_control_plane", "ansible_controller_select_mode", "ansible_controllers"}
-								
-								// Merge fields from insert, but preserve critical fields
+								// Only add fields that don't already exist
 								for metaKey, metaValue := range newMetaMap {
-									shouldPreserve := false
-									for _, preserveField := range preserveFields {
-										if metaKey == preserveField {
-											shouldPreserve = true
-											break
-										}
-									}
-									
-									if !shouldPreserve {
-										if metaKey == "deployer" {
-											// Special handling for deployer - merge its sub-fields
-											if existingDeployer, exists := existingMetaMap["deployer"]; exists {
-												if existingDeployerMap, ok := existingDeployer.(map[string]any); ok {
-													if newDeployerMap, ok := metaValue.(map[string]any); ok {
-														// Merge all deployer sub-fields
-														for deployerKey, deployerValue := range newDeployerMap {
-															existingDeployerMap[deployerKey] = deployerValue
-														}
-													}
-												}
-											} else {
-												existingMetaMap[metaKey] = metaValue
-											}
-										} else {
-											existingMetaMap[metaKey] = metaValue
-										}
+									if _, exists := existingMetaMap[metaKey]; !exists {
+										existingMetaMap[metaKey] = metaValue
 									}
 								}
 								continue
@@ -517,8 +490,10 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 						}
 					}
 				}
-				// For non-__meta__ fields, use simple overwrite
-				final[k] = v
+				// For non-__meta__ fields, only add if they don't exist
+				if _, exists := final[k]; !exists {
+					final[k] = v
+				}
 			}
 		}
 	}
