@@ -179,47 +179,6 @@ func parseInsert(line string) (bool, Insert) {
 	}
 }
 
-// parseAllInserts parses all inserts in a file
-func parseAllInserts(path string, done map[string]bool) ([]Insert, map[string]bool, error) {
-	logDebug.Println("parseAllInserts(", path, done, ")")
-	if !fileExists(path) {
-		logErr.Println(path, "path does not exist")
-		return []Insert{}, done, errors.New("path insert does not exist")
-	}
-
-	if val, ok := done[path]; ok && val {
-		logErr.Println(path, "is inserted more than once")
-		return []Insert{}, done, ErrorIncludeLoop
-	}
-
-	done[path] = true
-
-	result := []Insert{}
-
-	file, err := os.Open(path)
-	if err != nil {
-		return []Insert{}, done, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		if ok, insert := parseInsert(line); ok {
-			logDebug.Println("parseInsert(", line, ")")
-			insert.path, err = resolvePath(rootFlag, insert.path, path)
-			if err != nil {
-				return []Insert{}, done, err
-			}
-
-			// For inserts, we don't recursively parse - just add the insert
-			result = append(result, insert)
-		}
-	}
-	return result, done, nil
-}
 
 // parseAllIncludes parses all includes in a file
 func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]bool, error) {
