@@ -446,3 +446,78 @@ func TestRelativeFileLoadInto(t *testing.T) {
 	}
 
 }
+
+func TestParseIncludeWithOptions(t *testing.T) {
+	testCases := []struct {
+		line     string
+		expected Include
+		valid    bool
+	}{
+		{
+			line: `#include "file.yaml"`,
+			expected: Include{
+				path:    "file.yaml",
+				options: []string{},
+			},
+			valid: true,
+		},
+		{
+			line: `#include "file.yaml" notmerge`,
+			expected: Include{
+				path:    "file.yaml",
+				options: []string{"notmerge"},
+			},
+			valid: true,
+		},
+		{
+			line: `#include file.yaml notmerge`,
+			expected: Include{
+				path:    "file.yaml",
+				options: []string{"notmerge"},
+			},
+			valid: true,
+		},
+		{
+			line: `#include "file.yaml" notmerge other`,
+			expected: Include{
+				path:    "file.yaml",
+				options: []string{"notmerge", "other"},
+			},
+			valid: true,
+		},
+		{
+			line:  `not an include`,
+			valid: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		valid, include := parseInclude(tc.line)
+		if valid != tc.valid {
+			t.Errorf("Expected valid=%v, got %v for line: %s", tc.valid, valid, tc.line)
+			continue
+		}
+		if valid && !reflect.DeepEqual(include, tc.expected) {
+			t.Errorf("Expected %+v, got %+v for line: %s", tc.expected, include, tc.line)
+		}
+	}
+}
+
+func TestIncludeHasOption(t *testing.T) {
+	include := Include{
+		path:    "file.yaml",
+		options: []string{"notmerge", "other"},
+	}
+
+	if !include.hasOption("notmerge") {
+		t.Error("Expected hasOption('notmerge') to return true")
+	}
+
+	if !include.hasOption("other") {
+		t.Error("Expected hasOption('other') to return true")
+	}
+
+	if include.hasOption("nonexistent") {
+		t.Error("Expected hasOption('nonexistent') to return false")
+	}
+}

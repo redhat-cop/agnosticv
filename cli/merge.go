@@ -3,17 +3,18 @@ package main
 import (
 	"errors"
 	"fmt"
-	yamljson "github.com/ghodss/yaml"
-	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/go-openapi/jsonpointer"
-	"github.com/imdario/mergo"
-	"github.com/mohae/deepcopy"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
+
+	yamljson "github.com/ghodss/yaml"
+	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/go-openapi/jsonpointer"
+	"github.com/imdario/mergo"
+	"github.com/mohae/deepcopy"
 )
 
 // initMap initialize a map using a bunch of keys.
@@ -437,6 +438,70 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 						return final, mergeList, err
 					}
 				}
+			}
+		}
+	}
+
+	// Handle #insert directives - add their content without merge strategies
+	inserts, _, err := getAllInserts(p, make(map[string]bool))
+	if err != nil {
+		return map[string]any{}, []Include{}, err
+	}
+
+	for _, insert := range inserts {
+		logDebug.Printf("Processing insert: %s", insert.path)
+
+		// For inserts, we need to get the merge list for the insert file
+		// to process its includes, but then apply it without merge strategies
+		insertMergeList, err := getMergeList(insert.path)
+		if err != nil {
+			return map[string]any{}, []Include{}, err
+		}
+
+		// Process the insert merge list without applying merge strategies
+		for _, insertFile := range insertMergeList {
+			content, err := os.ReadFile(insertFile.path)
+			if err != nil {
+				return map[string]any{}, []Include{}, err
+			}
+
+			insertData := make(map[string]any)
+			err = yamljson.Unmarshal(content, &insertData)
+			if err != nil {
+				logErr.Println("cannot unmarshal insert data:", insertFile.path)
+				return map[string]any{}, []Include{}, err
+			}
+
+			// For inserts, we do selective merging for __meta__ section
+			for k, v := range insertData {
+				if k == "__meta__" {
+					// For __meta__ section, only add specific fields without overwriting existing ones
+					if existingMeta, exists := final[k]; exists {
+						if existingMetaMap, ok := existingMeta.(map[string]any); ok {
+							if newMetaMap, ok := v.(map[string]any); ok {
+								// Only add sandboxes and deployer fields, don't overwrite other fields
+								if sandboxes, hasSandboxes := newMetaMap["sandboxes"]; hasSandboxes {
+									existingMetaMap["sandboxes"] = sandboxes
+								}
+								if deployer, hasDeployer := newMetaMap["deployer"]; hasDeployer {
+									if deployerMap, ok := deployer.(map[string]any); ok {
+										if existingDeployer, exists := existingMetaMap["deployer"]; exists {
+											if existingDeployerMap, ok := existingDeployer.(map[string]any); ok {
+												// Merge all deployer fields from the insert
+												for k, v := range deployerMap {
+													existingDeployerMap[k] = v
+												}
+											}
+										}
+									}
+								}
+								continue
+							}
+						}
+					}
+				}
+				// For non-__meta__ fields, use simple overwrite
+				final[k] = v
 			}
 		}
 	}
