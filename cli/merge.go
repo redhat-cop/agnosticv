@@ -475,23 +475,40 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 			// For inserts, we do selective merging for __meta__ section
 			for k, v := range insertData {
 				if k == "__meta__" {
-					// For __meta__ section, only add specific fields without overwriting existing ones
+					// For __meta__ section, merge specific fields while preserving critical ones
 					if existingMeta, exists := final[k]; exists {
 						if existingMetaMap, ok := existingMeta.(map[string]any); ok {
 							if newMetaMap, ok := v.(map[string]any); ok {
-								// Only add sandboxes and deployer fields, don't overwrite other fields
-								if sandboxes, hasSandboxes := newMetaMap["sandboxes"]; hasSandboxes {
-									existingMetaMap["sandboxes"] = sandboxes
-								}
-								if deployer, hasDeployer := newMetaMap["deployer"]; hasDeployer {
-									if deployerMap, ok := deployer.(map[string]any); ok {
-										if existingDeployer, exists := existingMetaMap["deployer"]; exists {
-											if existingDeployerMap, ok := existingDeployer.(map[string]any); ok {
-												// Merge all deployer fields from the insert
-												for k, v := range deployerMap {
-													existingDeployerMap[k] = v
+								// Fields to preserve from existing (don't overwrite)
+								preserveFields := []string{"asset_uuid", "components", "catalog", "anarchy", "ansible_control_plane", "ansible_controller_select_mode", "ansible_controllers"}
+								
+								// Merge fields from insert, but preserve critical fields
+								for metaKey, metaValue := range newMetaMap {
+									shouldPreserve := false
+									for _, preserveField := range preserveFields {
+										if metaKey == preserveField {
+											shouldPreserve = true
+											break
+										}
+									}
+									
+									if !shouldPreserve {
+										if metaKey == "deployer" {
+											// Special handling for deployer - merge its sub-fields
+											if existingDeployer, exists := existingMetaMap["deployer"]; exists {
+												if existingDeployerMap, ok := existingDeployer.(map[string]any); ok {
+													if newDeployerMap, ok := metaValue.(map[string]any); ok {
+														// Merge all deployer sub-fields
+														for deployerKey, deployerValue := range newDeployerMap {
+															existingDeployerMap[deployerKey] = deployerValue
+														}
+													}
 												}
+											} else {
+												existingMetaMap[metaKey] = metaValue
 											}
+										} else {
+											existingMetaMap[metaKey] = metaValue
 										}
 									}
 								}
