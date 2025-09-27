@@ -451,22 +451,55 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 	for _, insert := range inserts {
 		logDebug.Printf("Processing insert: %s", insert.path)
 
-		// Just include the content of the insert file
-		content, err := os.ReadFile(insert.path)
+		// Get the merge list for the insert file to process its includes
+		insertMergeList, err := getMergeList(insert.path)
 		if err != nil {
 			return map[string]any{}, []Include{}, err
 		}
 
-		insertData := make(map[string]any)
-		err = yamljson.Unmarshal(content, &insertData)
-		if err != nil {
-			logErr.Println("cannot unmarshal insert data:", insert.path)
-			return map[string]any{}, []Include{}, err
+		// Process the insert merge list - merge all files first, then add to final
+		insertMergedData := make(map[string]any)
+		for _, insertFile := range insertMergeList {
+			content, err := os.ReadFile(insertFile.path)
+			if err != nil {
+				return map[string]any{}, []Include{}, err
+			}
+
+			insertData := make(map[string]any)
+			err = yamljson.Unmarshal(content, &insertData)
+			if err != nil {
+				logErr.Println("cannot unmarshal insert data:", insertFile.path)
+				return map[string]any{}, []Include{}, err
+			}
+
+			// Merge this file's data into the insert merged data
+			for k, v := range insertData {
+				insertMergedData[k] = v
+			}
 		}
 
-		// Just add all content from insert
-		for k, v := range insertData {
-			final[k] = v
+		// Now add the merged insert data to final, preserving local variables
+		for k, v := range insertMergedData {
+			// For __meta__ section, merge fields but preserve existing ones
+			if k == "__meta__" {
+				if existingMeta, exists := final[k]; exists {
+					if existingMetaMap, ok := existingMeta.(map[string]any); ok {
+						if newMetaMap, ok := v.(map[string]any); ok {
+							// Only add fields that don't already exist
+							for metaKey, metaValue := range newMetaMap {
+								if _, exists := existingMetaMap[metaKey]; !exists {
+									existingMetaMap[metaKey] = metaValue
+								}
+							}
+							continue
+						}
+					}
+				}
+			}
+			// For non-__meta__ fields, only add if they don't exist
+			if _, exists := final[k]; !exists {
+				final[k] = v
+			}
 		}
 	}
 
