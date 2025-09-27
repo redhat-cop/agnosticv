@@ -451,31 +451,22 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 	for _, insert := range inserts {
 		logDebug.Printf("Processing insert: %s", insert.path)
 
-		// For inserts, we need to get the merge list for the insert file
-		// to process its includes, but then apply it without merge strategies
-		insertMergeList, err := getMergeList(insert.path)
+		// Just include the content of the insert file
+		content, err := os.ReadFile(insert.path)
 		if err != nil {
 			return map[string]any{}, []Include{}, err
 		}
 
-		// Process the insert merge list - just add all content
-		for _, insertFile := range insertMergeList {
-			content, err := os.ReadFile(insertFile.path)
-			if err != nil {
-				return map[string]any{}, []Include{}, err
-			}
+		insertData := make(map[string]any)
+		err = yamljson.Unmarshal(content, &insertData)
+		if err != nil {
+			logErr.Println("cannot unmarshal insert data:", insert.path)
+			return map[string]any{}, []Include{}, err
+		}
 
-			insertData := make(map[string]any)
-			err = yamljson.Unmarshal(content, &insertData)
-			if err != nil {
-				logErr.Println("cannot unmarshal insert data:", insertFile.path)
-				return map[string]any{}, []Include{}, err
-			}
-
-			// Just add all content from insert
-			for k, v := range insertData {
-				final[k] = v
-			}
+		// Just add all content from insert
+		for k, v := range insertData {
+			final[k] = v
 		}
 	}
 
