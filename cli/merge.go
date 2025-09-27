@@ -458,7 +458,7 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 			return map[string]any{}, []Include{}, err
 		}
 
-		// Process the insert merge list without applying merge strategies
+		// Process the insert merge list - just add all content
 		for _, insertFile := range insertMergeList {
 			content, err := os.ReadFile(insertFile.path)
 			if err != nil {
@@ -472,28 +472,9 @@ func mergeVars(p string, mergeStrategies []MergeStrategy) (map[string]any, []Inc
 				return map[string]any{}, []Include{}, err
 			}
 
-			// For inserts, add content while preserving local variables
+			// Just add all content from insert
 			for k, v := range insertData {
-				// For __meta__ section, merge fields but preserve existing ones
-				if k == "__meta__" {
-					if existingMeta, exists := final[k]; exists {
-						if existingMetaMap, ok := existingMeta.(map[string]any); ok {
-							if newMetaMap, ok := v.(map[string]any); ok {
-								// Only add fields that don't already exist
-								for metaKey, metaValue := range newMetaMap {
-									if _, exists := existingMetaMap[metaKey]; !exists {
-										existingMetaMap[metaKey] = metaValue
-									}
-								}
-								continue
-							}
-						}
-					}
-				}
-				// For non-__meta__ fields, only add if they don't exist
-				if _, exists := final[k]; !exists {
-					final[k] = v
-				}
+				final[k] = v
 			}
 		}
 	}
