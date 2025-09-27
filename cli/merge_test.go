@@ -446,3 +446,45 @@ func TestRelativeFileLoadInto(t *testing.T) {
 	}
 
 }
+
+func TestParseInsert(t *testing.T) {
+	testCases := []struct {
+		line     string
+		expected Insert
+		valid    bool
+	}{
+		{
+			line: `#insert "file.yaml"`,
+			expected: Insert{
+				path: "file.yaml",
+			},
+			valid: true,
+		},
+		{
+			line: `#insert file.yaml`,
+			expected: Insert{
+				path: "file.yaml",
+			},
+			valid: true,
+		},
+		{
+			line:  `not an insert`,
+			valid: false,
+		},
+		{
+			line:  `#include "file.yaml"`,
+			valid: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		valid, insert := parseInsert(tc.line)
+		if valid != tc.valid {
+			t.Errorf("Expected valid=%v, got %v for line: %s", tc.valid, valid, tc.line)
+			continue
+		}
+		if valid && !reflect.DeepEqual(insert, tc.expected) {
+			t.Errorf("Expected %+v, got %+v for line: %s", tc.expected, insert, tc.line)
+		}
+	}
+}

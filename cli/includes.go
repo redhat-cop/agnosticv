@@ -17,6 +17,11 @@ type Include struct {
 	// options []Option
 }
 
+// Insert represent the insert file
+type Insert struct {
+	path string
+}
+
 // ErrorIncludeLoop happens in case of an infinite loop between included files
 var ErrorIncludeLoop = errors.New("include loop")
 
@@ -106,6 +111,7 @@ func printPaths(mergeList []Include, workdir string) {
 }
 
 var regexInclude = regexp.MustCompile(`^[ \t]*#include[ \t]+("(.*?[^\\])"|([^ \t]+))[ \t]*$`)
+var regexInsert = regexp.MustCompile(`^[ \t]*#insert[ \t]+("(.*?[^\\])"|([^ \t]+))[ \t]*$`)
 
 // parseInclude function parses the includes in a line
 func parseInclude(line string) (bool, Include) {
@@ -138,6 +144,41 @@ func parseInclude(line string) (bool, Include) {
 		path: result[0][2],
 	}
 }
+
+// parseInsert function parses the inserts in a line
+func parseInsert(line string) (bool, Insert) {
+	result := regexInsert.FindAllStringSubmatch(line, -1)
+
+	if len(result) == 0 {
+		return false, Insert{}
+	}
+
+	if len(result) > 1 {
+		logErr.Println("Could not parse insert line:", line)
+		return false, Insert{}
+	}
+
+	if len(result[0]) < 4 {
+		logErr.Println("Could not parse insert line:", line)
+		return false, Insert{}
+	}
+
+	var path string
+
+	if result[0][2] == "" {
+		if result[0][3] == "" {
+			return false, Insert{}
+		}
+		path = result[0][3]
+	} else {
+		path = result[0][2]
+	}
+
+	return true, Insert{
+		path: path,
+	}
+}
+
 
 // parseAllIncludes parses all includes in a file
 func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]bool, error) {
@@ -204,6 +245,64 @@ func parseAllIncludes(path string, done map[string]bool) ([]Include, map[string]
 
 			innerIncludes = append(innerIncludes, include)
 			result = append(result, innerIncludes...)
+		}
+	}
+	return result, done, nil
+}
+
+// getAllInserts collects all insert directives from a file and its includes
+func getAllInserts(path string, done map[string]bool) ([]Insert, map[string]bool, error) {
+	logDebug.Println("getAllInserts(", path, done, ")")
+	if !fileExists(path) {
+		logErr.Println(path, "path does not exist")
+		return []Insert{}, done, errors.New("path does not exist")
+	}
+
+	if val, ok := done[path]; ok && val {
+		logErr.Println(path, "is processed more than once")
+		return []Insert{}, done, ErrorIncludeLoop
+	}
+
+	done[path] = true
+
+	result := []Insert{}
+
+	file, err := os.Open(path)
+	if err != nil {
+		return []Insert{}, done, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if ok, insert := parseInsert(line); ok {
+			logDebug.Println("parseInsert(", line, ")")
+			insert.path, err = resolvePath(rootFlag, insert.path, path)
+			if err != nil {
+				return []Insert{}, done, err
+			}
+
+			// For inserts, we don't recursively parse - just add the insert
+			result = append(result, insert)
+		}
+
+		// Also check for includes and recursively get their inserts
+		if ok, include := parseInclude(line); ok {
+			include.path, err = resolvePath(rootFlag, include.path, path)
+			if err != nil {
+				return []Insert{}, done, err
+			}
+
+			// Recursively get inserts from included files
+			innerInserts, innerDone, err := getAllInserts(include.path, done)
+			done = innerDone
+			if err != nil {
+				return []Insert{}, done, err
+			}
+			result = append(result, innerInserts...)
 		}
 	}
 	return result, done, nil
