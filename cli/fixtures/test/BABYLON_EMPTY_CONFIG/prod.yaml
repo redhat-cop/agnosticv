@@ -20,7 +20,7 @@ agnosticv_meta:
 ##########################
 __meta__:
   deployer:
-    scm_ref: test-empty-config-prod-0.5
+    scm_ref: development
   lifespan:
     default: 1d
   access_control:
