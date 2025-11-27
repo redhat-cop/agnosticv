@@ -1,0 +1,10 @@
+#agnosticv catalog_item false
+
+# Third file in the chain - deepest in the include hierarchy
+foo: from-third
+only-in-third: true
+
+config:
+  level1:
+    level2:
+      foo: from-third

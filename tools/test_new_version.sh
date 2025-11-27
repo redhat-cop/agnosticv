@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
 usage() {
-    echo "test_new_version.sh REPO_PATH BIN_PATH1 BIN_PATH2"
+    echo "test_new_version.sh REPO_PATH BIN_PATH1 BIN_PATH2 [MAX_NUMBER]"
     echo
     echo "test 2 different versions of agnosticV CLI against an agnosticv repository."
     echo
     echo "EXAMPLE"
     echo "cd agnosticv"
     echo "./test_new_version.sh ~/agnosticv ~/bin/agnosticv.v0.3.2 ~/bin/agnosticv.GPTEINFRA-3125"
+    echo
+    echo "MAX_NUMBER: optional maximum number of items to test (default: all items)"
 
     exit 2
 
@@ -21,6 +23,7 @@ usage() {
 cd ${1}
 cli1="${2}"
 cli2="${3}"
+maxnumber="${4:-all}"
 
 echo -n "listing ......................."
 diff -u <($cli1 --list) <($cli2 --list)
@@ -61,7 +64,12 @@ if [ $? != 0 ]; then
 	echo >&2 "Listing using JMSEPath is not the same"
 	exit 2
 fi
+iteration=0
 for ci in $($cli1 --list); do
+    iteration=$((iteration+1))
+    if [ "$maxnumber" != "all" ] && [ $iteration -gt $maxnumber ]; then
+        break
+    fi
 	printf "%-80s" "merge $ci"
 
 	diff -u <($cli1 --merge $ci) <($cli2 --merge $ci) > /dev/null
@@ -81,7 +89,12 @@ for ci in $($cli1 --list); do
     fi
 done
 
+iteration=0
 for fil in $(find -name common.yaml) $(find -name account.yaml) $(find includes -type f); do
+    iteration=$((iteration+1))
+    if [ "$maxnumber" != "all" ] && [ $iteration -gt $maxnumber ]; then
+        break
+    fi
 	printf "%-80s" "related files $fil"
 	diff -u <($cli1 --list --related $fil) <($cli2 --list --related $fil) > /dev/null
 	if [ $? != 0 ]; then

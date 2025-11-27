@@ -1,0 +1,12 @@
+#merge recursive=true /test/MERGE_DEPTH_TEST/second.yaml
+
+# With recursive=true, the merge list should be:
+# [third.yaml, second.yaml, test-recursive-true.yaml]
+# we should get
+# - foo: from-third (from third.yaml)
+# only-in-first: true
+# only-in-second: true
+# only-in-third: true
+
+foo: from-first
+only-in-first: true

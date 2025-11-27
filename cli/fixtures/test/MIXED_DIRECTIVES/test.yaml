@@ -1,0 +1,5 @@
+---
+#include base.yaml
+#merge override.yaml
+foo: from-test
+test_only: true
