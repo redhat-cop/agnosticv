@@ -1,5 +1,5 @@
 #agnosticv catalog_item false
-#merge /test/MERGE_DEPTH_TEST/third.yaml
+#include /test/MERGE_DEPTH_TEST/third.yaml
 
 # Second file - includes third.yaml
 

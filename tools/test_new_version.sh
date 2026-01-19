@@ -28,8 +28,8 @@ maxnumber="${4:-all}"
 echo -n "listing ......................."
 diff -u <($cli1 --list) <($cli2 --list)
 if [ $? != 0 ]; then
-	echo >&2 "Listing is not the same"
-	exit 2
+    echo >&2 "Listing is not the same"
+    exit 2
 fi
 echo OK
 
@@ -44,7 +44,7 @@ for dir in *; do
         fi
         echo OK
 
-        if $cli1 --help | grep '\-dir string' -q; then
+        if $cli1 --help |& grep '\-dir string' -q; then
             cd /tmp
             printf "%-80s" "from oustide ${dir} with --dir"
             diff -u <($cli1 --list --dir "${dir}") <($cli2 --list --dir "${dir}")
@@ -61,28 +61,28 @@ done
 
 diff -u <($cli1 --list --has __meta__.catalog) <($cli2 --list --has __meta__.catalog)
 if [ $? != 0 ]; then
-	echo >&2 "Listing using JMSEPath is not the same"
-	exit 2
+    echo >&2 "Listing using JMSEPath is not the same"
+    exit 2
 fi
 iteration=0
 for ci in $($cli1 --list); do
-    iteration=$((iteration+1))
+    iteration=$((iteration + 1))
     if [ "$maxnumber" != "all" ] && [ $iteration -gt $maxnumber ]; then
         break
     fi
-	printf "%-80s" "merge $ci"
+    printf "%-80s" "merge $ci"
 
-	diff -u <($cli1 --merge $ci) <($cli2 --merge $ci) > /dev/null
-	if [ $? != 0 ]; then
-		echo "NO"
-		diff -y --color=always <($cli1 --merge $ci) <($cli2 --merge $ci)
-		#exit 2
-	fi
+    diff -u <($cli1 --merge $ci) <($cli2 --merge $ci) >/dev/null
+    if [ $? != 0 ]; then
+        echo "NO"
+        diff -y --color=always <($cli1 --merge $ci) <($cli2 --merge $ci)
+        #exit 2
+    fi
 
-	echo YES
+    echo YES
 
-	printf "%-80s" "merge $ci JSON"
-    if ! $cli2 --merge $ci --output json | jq . > /dev/null; then
+    printf "%-80s" "merge $ci JSON"
+    if ! $cli2 --merge $ci --output json | jq . >/dev/null; then
         echo NO
     else
         echo YES
@@ -91,16 +91,16 @@ done
 
 iteration=0
 for fil in $(find -name common.yaml) $(find -name account.yaml) $(find includes -type f); do
-    iteration=$((iteration+1))
+    iteration=$((iteration + 1))
     if [ "$maxnumber" != "all" ] && [ $iteration -gt $maxnumber ]; then
         break
     fi
-	printf "%-80s" "related files $fil"
-	diff -u <($cli1 --list --related $fil) <($cli2 --list --related $fil) > /dev/null
-	if [ $? != 0 ]; then
-		echo "NO"
-		diff -u <($cli1 --list --related $fil) <($cli2 --list --related $fil)
-		exit 2
-	fi
-	echo YES
+    printf "%-80s" "related files $fil"
+    diff -u <($cli1 --list --related $fil) <($cli2 --list --related $fil) >/dev/null
+    if [ $? != 0 ]; then
+        echo "NO"
+        diff -u <($cli1 --list --related $fil) <($cli2 --list --related $fil)
+        exit 2
+    fi
+    echo YES
 done

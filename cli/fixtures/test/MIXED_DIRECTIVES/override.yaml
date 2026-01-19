@@ -1,4 +1,0 @@
----
-#agnosticv catalog_item false
-foo: from-override
-override_only: true

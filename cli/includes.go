@@ -14,8 +14,7 @@ import (
 // Include represent the include file
 type Include struct {
 	path      string
-	recursive bool   // true = process #include/#merge in included file (default), false = don't process includes in included file
-	directive string // "include" or "merge" - affects merge precedence
+	recursive bool // true = process #include in included file (default), false = don't process includes in included file
 }
 
 // ErrorIncludeLoop happens in case of an infinite loop between included files
@@ -90,27 +89,8 @@ func getMergeList(path string) ([]Include, error) {
 			logErr.Println("Error loading includes for", next)
 			return result, err
 		}
-
-		// Separate #include and #merge directives:
-		// - #include files come BEFORE current file (current file overrides them)
-		// - #merge files come AFTER current file (they override current file)
-		includeFiles := []Include{}
-		mergeFiles := []Include{}
-		for _, inc := range allIncludes {
-			if inc.directive == "merge" {
-				mergeFiles = append(mergeFiles, inc)
-			} else {
-				includeFiles = append(includeFiles, inc)
-			}
-		}
-
-		// Build correct order for current file: [includeFiles, current file, mergeFiles]
-		// Then prepend this group to result (so parent/common files have lower precedence)
-		temp := []Include{}
-		temp = append(temp, includeFiles...)
-		temp = append(temp, Include{path: next, recursive: true, directive: ""})
-		temp = append(temp, mergeFiles...)
-		result = append(temp, result...)
+		result = append([]Include{{path: next, recursive: true}}, result...)
+		result = append(allIncludes, result...)
 		previous = next
 	}
 
@@ -130,11 +110,11 @@ func printPaths(mergeList []Include, workdir string) {
 	}
 }
 
-// Regex to match both #include and #merge directives
-// Supports: #include /path, #merge /path, #merge recursive=false /path, #merge recursive=true /path
-var regexInclude = regexp.MustCompile(`^[ \t]*#(include|merge)(?:[ \t]+recursive=(true|false))?[ \t]+("(.*?[^\\])"|([^ \t]+))[ \t]*$`)
+// Regex to match #include directive
+// Supports: #include /path, #include recursive=false /path, #include recursive=true /path
+var regexInclude = regexp.MustCompile(`^[ \t]*#include(?:[ \t]+recursive=(true|false))?[ \t]+("(.*?[^\\])"|([^ \t]+))[ \t]*$`)
 
-// parseInclude function parses the includes and merges in a line
+// parseInclude function parses the includes in a line
 // Returns: (found, Include)
 func parseInclude(line string) (bool, Include) {
 	result := regexInclude.FindAllStringSubmatch(line, -1)
@@ -148,29 +128,26 @@ func parseInclude(line string) (bool, Include) {
 		return false, Include{}
 	}
 
-	if len(result[0]) < 6 {
+	if len(result[0]) < 5 {
 		logErr.Println("Could not parse include line:", line)
 		return false, Include{}
 	}
 
-	// Extract directive type (include or merge)
-	directive := result[0][1]
-
 	// Extract recursive parameter if present (default is true)
 	recursive := true
-	recursiveParam := result[0][2]
+	recursiveParam := result[0][1]
 	if recursiveParam != "" {
 		recursive = (recursiveParam == "true")
 	}
 
 	// Extract file path (either quoted or unquoted)
 	var path string
-	if result[0][4] != "" {
+	if result[0][3] != "" {
 		// Quoted path
-		path = result[0][4]
-	} else if result[0][5] != "" {
+		path = result[0][3]
+	} else if result[0][4] != "" {
 		// Unquoted path
-		path = result[0][5]
+		path = result[0][4]
 	} else {
 		return false, Include{}
 	}
@@ -178,21 +155,20 @@ func parseInclude(line string) (bool, Include) {
 	return true, Include{
 		path:      path,
 		recursive: recursive,
-		directive: directive,
 	}
 }
 
 // parseAllIncludes parses all includes in a file
 // Returns: (includes, done, error)
-// processIncludes: if true, process #include/#merge directives within this file
+// processIncludes: if true, process #include directives within this file
 //
 // Meta file behavior:
 //   - Always includes the direct .meta file if it exists (e.g., file.yaml → file.meta.yaml)
 //   - Meta files themselves don't get meta files (no meta.meta.yaml)
-//   - processIncludes controls whether #include/#merge directives in the meta file are processed
+//   - processIncludes controls whether #include directives in the meta file are processed
 //
 // For catalog items/common files: processIncludes is always true
-// For #include/#merge files: processIncludes matches the recursive parameter (true by default)
+// For #include files: processIncludes matches the recursive parameter (true by default)
 func parseAllIncludes(path string, done map[string]bool, processIncludes bool) ([]Include, map[string]bool, error) {
 	logDebug.Println("parseAllIncludes(", path, done, "processIncludes=", processIncludes, ")")
 	if !fileExists(path) {
@@ -211,7 +187,7 @@ func parseAllIncludes(path string, done map[string]bool, processIncludes bool) (
 
 	// Always check if path has a meta file (unless current file is already a meta file)
 	// The meta file itself is always included, but processIncludes controls whether
-	// we process #include/#merge directives within the meta file
+	// we process #include directives within the meta file
 	if !isMetaPath(path) {
 		if meta, err := getMetaPath(path); err == nil && fileExists(meta) {
 			innerIncludes, innerDone, err := parseAllIncludes(meta, done, processIncludes)
@@ -224,7 +200,7 @@ func parseAllIncludes(path string, done map[string]bool, processIncludes bool) (
 		}
 	}
 
-	// If processIncludes is false, don't scan for #include/#merge directives
+	// If processIncludes is false, don't scan for #include directives
 	if !processIncludes {
 		return result, done, nil
 	}
@@ -270,14 +246,7 @@ func parseAllIncludes(path string, done map[string]bool, processIncludes bool) (
 				}
 			}
 
-			// Different behavior for #include vs #merge:
-			// - For #merge: [include, transitives] - transitives override the merged file
-			// - For #include: [transitives, include] - included file overrides its transitives
-			if include.directive == "merge" {
-				innerIncludes = append([]Include{include}, innerIncludes...)
-			} else {
-				innerIncludes = append(innerIncludes, include)
-			}
+			innerIncludes = append(innerIncludes, include)
 			result = append(result, innerIncludes...)
 		}
 	}

@@ -164,7 +164,7 @@ Some files are automatically included in the merge list to produce the final cat
 
 They can be placed at any level in the agnosticv repository.
 
-=== Includes and Merges ===
+=== Includes ===
 
 Files included in the merge list using the `#include PATH` feature. See the dedicated section below.
 
@@ -195,7 +195,7 @@ are the same.
 ** if not, the path is relative to the current file
 
 
-===== Common files in case of includes/merges =====
+===== Common files in case of includes =====
 
 |========================
 | Scenario                            | Gets Parent Common Files? |  Get .meta file?
@@ -252,32 +252,22 @@ The merge list will be:
 . `/includes/file2.yaml`
 . `/gpte/OCP4_WORKSHOP/prod.yaml`
 
-==== `#include` and `#merge` directives ====
+==== `recursive` parameter ====
 
-Both directives allow you to explicitly control which files are merged and in what order. The key difference is their merge precedence:
+The `#include` directive supports a `recursive` parameter that controls whether includes within the included file are processed:
 
-* **`#include FILENAME`** - The included file is placed *BEFORE* the current file in the merge list
-** The current file has higher precedence and can override values from the included file
-** Use when importing base configuration that the current file can customize
-
-* **`#merge FILENAME`** - The merged file is placed *AFTER* the current file in the merge list
-** The merged file has higher precedence and can override values from the current file
-** Use when applying overrides or patches on top of the current file
-
-Both directives support the `recursive` parameter:
-
-* **`recursive=true`** (default) - Process `#include`/`#merge` directives within the included/merged file
+* **`recursive=true`** (default) - Process `#include` directives within the included file
 ** The file's associated `.meta` file is always included
-** `#include`/`#merge` directives in both the main file and its `.meta` file are processed
-** if file is a catalog item, its common files are included (`common.yaml`, `account.yaml`)
-* **`recursive=false`** - Include/merge the file but do NOT process any `#include` or `#merge` directives within it
+** `#include` directives in both the main file and its `.meta` file are processed
+** If the file is a catalog item, its common files are included (`common.yaml`, `account.yaml`)
+* **`recursive=false`** - Include the file but do NOT process any `#include` directives within it
 ** The file's associated `.meta` file is still always included
 ** File's common files are not included (`common.yaml`, `account.yaml`)
-** `#include`/`#merge` directives in both the main file and its `.meta` file are NOT processed
+** `#include` directives in both the main file and its `.meta` file are NOT processed
 ** Prevents transitive includes and gives you control over the include chain depth
 ** Useful when you want to include a base file but prevent it from pulling in its own dependencies
 
-**Important:** Meta files (`.meta.yaml` or `.meta.yml`) are always automatically included for any file, regardless of the `recursive` parameter. The `recursive` parameter only controls whether `#include`/`#merge` directives within those meta files are processed.
+**Important:** Meta files (`.meta.yaml` or `.meta.yml`) are always automatically included for any file, regardless of the `recursive` parameter. The `recursive` parameter only controls whether `#include` directives within those meta files are processed.
 
 ===== Syntax Examples =====
 
@@ -286,43 +276,8 @@ Both directives support the `recursive` parameter:
 #include /path/to/file.yaml                    # Absolute path from repo root
 #include ../relative/path.yaml                 # Relative to current file
 #include recursive=false /base.yaml            # Include without processing its includes
-
-#merge /path/to/override.yaml                  # Merge file (comes AFTER current)
-#merge recursive=false /patch.yaml             # Merge without processing its includes
+#include recursive=true /base.yaml             # Explicit recursive (same as default)
 ----
-
-===== Complete Example =====
-
-[source,yaml]
-.`base.yaml` (marked as not a catalog item)
-----
-#agnosticv catalog_item false
-foo: from-base
-base_value: true
-----
-
-[source,yaml]
-.`override.yaml` (marked as not a catalog item)
-----
-#agnosticv catalog_item false
-foo: from-override
-override_value: true
-----
-
-[source,yaml]
-.`my-catalog-item.yaml`
-----
-#include base.yaml
-#merge override.yaml
-foo: from-current
-current_value: true
-----
-
-**Merge order:** `base.yaml` → `my-catalog-item.yaml` → `override.yaml`
-
-**Result:** `foo: from-override` (override.yaml comes last and wins)
-
-All three `*_value` fields will be present in the final merged result.
 
 ===== Example with recursive=false =====
 
@@ -337,7 +292,7 @@ foo: from-third
 .`second.yaml` (marked as not a catalog item)
 ----
 #agnosticv catalog_item false
-#merge /third.yaml
+#include /third.yaml
 foo: from-second
 ----
 
@@ -352,11 +307,11 @@ With `recursive=false`:
 
 * `second.yaml` is included (so we get its `foo: from-second`)
 * If `second.meta.yaml` exists, it would also be included (meta files are always included)
-* But the `#merge /third.yaml` directive inside `second.yaml` is NOT processed
+* But the `#include /third.yaml` directive inside `second.yaml` is NOT processed
 * So `third.yaml` is NOT included
 * Final result: `foo: from-first` (current file overrides the included second.yaml)
 
-**Note:** If any of these files had associated `.meta.yaml` files, they would all be included in the merge, but any `#include`/`#merge` directives within those meta files would not be processed due to `recursive=false`.
+**Note:** If any of these files had associated `.meta.yaml` files, they would all be included in the merge, but any `#include` directives within those meta files would not be processed due to `recursive=false`.
 
 
 === Meta files ===
@@ -367,9 +322,9 @@ The meta file can contain the value of the  `\\__meta__` dictionary. It is conve
 **Key points about meta files:**
 
 * Meta files are **always automatically included** when their associated file is processed
-* This happens regardless of whether the file is a catalog item, common file, or included/merged file
-* Even with `#include recursive=false` or `#merge recursive=false`, the meta file is still included
-* The `recursive` parameter only controls whether `#include`/`#merge` directives **within** the meta file are processed
+* This happens regardless of whether the file is a catalog item, common file, or included file
+* Even with `#include recursive=false`, the meta file is still included
+* The `recursive` parameter only controls whether `#include` directives **within** the meta file are processed
 * Meta files themselves don't have meta files (no `meta.meta.yaml`)
 
 For example, the following files are valid meta files:
