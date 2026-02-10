@@ -1,0 +1,4 @@
+---
+# Common file in INCLUDE_CATALOG_ITEM directory
+# This should NOT be included when target.yaml is merged into another catalog item
+common_value: from-common-file

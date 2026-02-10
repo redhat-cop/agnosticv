@@ -1,0 +1,6 @@
+---
+# This catalog item includes target.yaml from a different directory
+# The target.yaml's parent common.yaml should NOT be included in the merge list with recursive=false
+#include recursive=false /test/INCLUDE_CATALOG_ITEM/target.yaml
+foo: from-including
+including_only: true

@@ -1,0 +1,4 @@
+---
+#include recursive=false /test/MERGE_DEPTH_TEST/second.yaml
+foo: from-first
+onlyinfirst: true

@@ -1,0 +1,4 @@
+---
+# Child common file - should merge with parent common.yaml when explicitly merged
+child_value: from-child-common
+shared_value: from-child

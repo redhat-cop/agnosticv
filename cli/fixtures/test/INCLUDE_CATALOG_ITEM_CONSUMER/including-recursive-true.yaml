@@ -1,0 +1,6 @@
+---
+# This catalog item merges target.yaml with recursive=true (default)
+# The target.yaml's parent common.yaml SHOULD be included in the merge list
+#include /test/INCLUDE_CATALOG_ITEM/target.yaml
+foo: from-including
+including_only: true

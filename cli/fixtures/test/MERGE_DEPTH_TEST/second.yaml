@@ -1,0 +1,12 @@
+#agnosticv catalog_item false
+#include /test/MERGE_DEPTH_TEST/third.yaml
+
+# Second file - includes third.yaml
+
+foo: from-second
+only-in-second: true
+
+config:
+  level1:
+    level2:
+      foo: from-second

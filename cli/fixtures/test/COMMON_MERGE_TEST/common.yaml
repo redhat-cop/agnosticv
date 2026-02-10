@@ -1,0 +1,4 @@
+---
+# Parent common file
+parent_value: from-parent-common
+shared_value: from-parent

@@ -241,6 +241,7 @@ func TestIsPathCatalogItem(t *testing.T) {
 }
 
 func TestWalk(t *testing.T) {
+	initLoggers()
 	prevDir, _ := os.Getwd()
 	// Restore the current directory at the end of the function
 	defer func() {
@@ -262,7 +263,7 @@ func TestWalk(t *testing.T) {
 		{
 			description: "No JMES filtering",
 			hasFlags:    []string{},
-			count:       13,
+			count:       17,
 		},
 		{
 			description:  "Related includes/include1.yaml",
@@ -298,7 +299,7 @@ func TestWalk(t *testing.T) {
 			hasFlags:       []string{},
 			relatedFlags:   []string{"includes/include1.yaml"},
 			orRelatedFlags: []string{"common.yaml"},
-			count:          13,
+			count:          17,
 		},
 		{
 			description:    "Related (exclusive + inclusive) to /common.yaml and --has flag",
@@ -320,7 +321,7 @@ func TestWalk(t *testing.T) {
 		{
 			description: "Is a Babylon catalog item",
 			hasFlags:    []string{"__meta__.catalog"},
-			count:       13,
+			count:       17,
 		},
 		{
 			description: "env_type is clientvm and purpose is development",
@@ -346,61 +347,107 @@ func TestWalk(t *testing.T) {
 
 func TestParseInclude(t *testing.T) {
 	testCases := []struct {
-		line  string
-		found bool
-		path  string
+		line      string
+		found     bool
+		path      string
+		recursive bool
 	}{
 		{
-			line:  "#include /path/ok",
-			found: true,
-			path:  "/path/ok",
+			line:      "#include /path/ok",
+			found:     true,
+			path:      "/path/ok",
+			recursive: true,
 		},
 		{
-			line:  "#include    /path/ok",
-			found: true,
-			path:  "/path/ok",
+			line:      "#include    /path/ok",
+			found:     true,
+			path:      "/path/ok",
+			recursive: true,
 		},
 		{
-			line:  "#include \"/path/ok\"",
-			found: true,
-			path:  "/path/ok",
+			line:      "#include \"/path/ok\"",
+			found:     true,
+			path:      "/path/ok",
+			recursive: true,
 		},
 		{
-			line:  "#include \"/path/ok\"    ",
-			found: true,
-			path:  "/path/ok",
+			line:      "#include \"/path/ok\"    ",
+			found:     true,
+			path:      "/path/ok",
+			recursive: true,
 		},
 		{
-			line:  "  #include \"/path/ok\"    ",
-			found: true,
-			path:  "/path/ok",
+			line:      "  #include \"/path/ok\"    ",
+			found:     true,
+			path:      "/path/ok",
+			recursive: true,
 		},
 		{
-			line:  "#iclude \"/path/ok\"    ",
-			found: false,
-			path:  "",
+			line:      "#iclude \"/path/ok\"    ",
+			found:     false,
+			path:      "",
+			recursive: true,
 		},
 		{
-			line:  "",
-			found: false,
-			path:  "",
+			line:      "",
+			found:     false,
+			path:      "",
+			recursive: true,
 		},
 		{
-			line:  "#include \"/path  with space \" ",
-			found: true,
-			path:  "/path  with space ",
+			line:      "#include \"/path  with space \" ",
+			found:     true,
+			path:      "/path  with space ",
+			recursive: true,
 		},
 		{
-			line:  "#include /path  with space without quotes ",
-			found: false,
-			path:  "",
+			line:      "#include /path  with space without quotes ",
+			found:     false,
+			path:      "",
+			recursive: true,
+		},
+		// Test cases for #include recursive parameter
+		{
+			line:      "#include recursive=false /path/ok",
+			found:     true,
+			path:      "/path/ok",
+			recursive: false,
+		},
+		{
+			line:      "#include recursive=true /path/ok",
+			found:     true,
+			path:      "/path/ok",
+			recursive: true,
+		},
+		{
+			line:      "#include recursive=false \"/path/with space\"",
+			found:     true,
+			path:      "/path/with space",
+			recursive: false,
+		},
+		{
+			line:      "  #include  recursive=false  /path/ok  ",
+			found:     true,
+			path:      "/path/ok",
+			recursive: false,
+		},
+		// #merge is no longer supported
+		{
+			line:      "#merge /path/ok",
+			found:     false,
+			path:      "",
+			recursive: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		found, include := parseInclude(tc.line)
-		if found != tc.found || include.path != tc.path {
-			t.Error(tc, found, include)
+		if found != tc.found {
+			t.Errorf("TestCase failed: %v, got found=%v", tc, found)
+			continue
+		}
+		if found && (include.path != tc.path || include.recursive != tc.recursive) {
+			t.Errorf("TestCase failed: %v, got found=%v path=%q recursive=%v", tc, found, include.path, include.recursive)
 		}
 	}
 }
@@ -428,6 +475,232 @@ func TestInclude(t *testing.T) {
 
 	if err != ErrorIncludeLoop {
 		t.Error("ErrorIncludeLoop expected, got", err)
+	}
+}
+
+func TestIncludeRecursiveFalse(t *testing.T) {
+	initLoggers()
+	rootFlag = abs("fixtures")
+	initConf(rootFlag)
+	initSchemaList()
+	initMergeStrategies()
+
+	// Test with #include recursive=false
+	mergedFalse, _, err := mergeVars(
+		"fixtures/test/MERGE_DEPTH_TEST/test-include-recursive-false.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// With recursive=false on #include, third.yaml should NOT be included
+	// So foo should be from-first (the main file overrides second.yaml)
+	if fooVal, ok := mergedFalse["foo"]; !ok {
+		t.Error("With #include recursive=false, 'foo' not found in merged vars")
+	} else if fooVal != "from-first" {
+		t.Errorf("With #include recursive=false, expected foo='from-first', got '%v'", fooVal)
+	}
+
+	// only-in-third should NOT be present (third.yaml was not processed)
+	if _, ok := mergedFalse["only-in-third"]; ok {
+		t.Error("With #include recursive=false, 'only-in-third' should be undefined")
+	}
+
+	// only-in-second should be present (second.yaml was included)
+	if _, ok := mergedFalse["only-in-second"]; !ok {
+		t.Error("With #include recursive=false, 'only-in-second' should be defined")
+	}
+
+	// onlyinfirst should be present
+	if _, ok := mergedFalse["onlyinfirst"]; !ok {
+		t.Error("With #include recursive=false, 'onlyinfirst' should be defined")
+	}
+}
+
+func TestIncludeCatalogItemNoCommonFiles(t *testing.T) {
+	initLoggers()
+	rootFlag = abs("fixtures")
+	initConf(rootFlag)
+	initSchemaList()
+	initMergeStrategies()
+
+	// Test that when including a catalog item with recursive=false, its parent common files are NOT included
+	merged, includeList, err := mergeVars(
+		"fixtures/test/INCLUDE_CATALOG_ITEM_CONSUMER/including.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The merge list should NOT contain common.yaml from INCLUDE_CATALOG_ITEM
+	// With recursive=false, we don't walk up the parent directory tree
+
+	// Verify common.yaml from INCLUDE_CATALOG_ITEM is NOT in the list
+	for _, inc := range includeList {
+		if strings.Contains(inc.path, "INCLUDE_CATALOG_ITEM/common.yaml") {
+			t.Error("common.yaml from INCLUDE_CATALOG_ITEM should NOT be in merge list when target.yaml is included with recursive=false")
+		}
+	}
+
+	// Verify that target.yaml IS in the list
+	foundTarget := false
+	for _, inc := range includeList {
+		if strings.HasSuffix(inc.path, "INCLUDE_CATALOG_ITEM/target.yaml") {
+			foundTarget = true
+			break
+		}
+	}
+	if !foundTarget {
+		t.Error("target.yaml should be in the merge list")
+	}
+
+	// Check merged values
+	// 'foo' should be from-including (with #include, target.yaml comes BEFORE including.yaml, so including.yaml overrides)
+	if val, ok := merged["foo"]; !ok {
+		t.Error("'foo' not found in merged vars")
+	} else if val != "from-including" {
+		t.Errorf("Expected foo='from-including', got '%v'", val)
+	}
+
+	// common_value from common.yaml should NOT be present
+	if _, ok := merged["common_value"]; ok {
+		t.Error("'common_value' from common.yaml should NOT be present when target.yaml is included with recursive=false")
+	}
+
+	// Both target_only and including_only should be present
+	if _, ok := merged["target_only"]; !ok {
+		t.Error("'target_only' should be defined")
+	}
+	if _, ok := merged["including_only"]; !ok {
+		t.Error("'including_only' should be defined")
+	}
+}
+
+func TestIncludeCatalogItemWithCommonFiles(t *testing.T) {
+	initLoggers()
+	rootFlag = abs("fixtures")
+	initConf(rootFlag)
+	initSchemaList()
+	initMergeStrategies()
+
+	// Test that when including/merging a catalog item with recursive=true (default),
+	// its parent common files ARE included in the merge list
+	merged, includeList, err := mergeVars(
+		"fixtures/test/INCLUDE_CATALOG_ITEM_CONSUMER/including-recursive-true.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The merge list SHOULD contain common.yaml from INCLUDE_CATALOG_ITEM
+	// because we're using recursive=true (default) and target.yaml is a catalog item
+	foundCommon := false
+	for _, inc := range includeList {
+		if strings.Contains(inc.path, "INCLUDE_CATALOG_ITEM/common.yaml") {
+			foundCommon = true
+			break
+		}
+	}
+	if !foundCommon {
+		t.Error("common.yaml from INCLUDE_CATALOG_ITEM SHOULD be in merge list when target.yaml is merged with recursive=true")
+	}
+
+	// Verify that target.yaml IS in the list
+	foundTarget := false
+	for _, inc := range includeList {
+		if strings.HasSuffix(inc.path, "INCLUDE_CATALOG_ITEM/target.yaml") {
+			foundTarget = true
+			break
+		}
+	}
+	if !foundTarget {
+		t.Error("target.yaml should be in the merge list")
+	}
+
+	// Check merged values
+	// 'foo' should be from-including (target.yaml is merged BEFORE including-recursive-true.yaml)
+	// becaues we're using an '#include' in this case.
+	if val, ok := merged["foo"]; !ok {
+		t.Error("'foo' not found in merged vars")
+	} else if val != "from-including" {
+		t.Errorf("Expected foo='from-including', got '%v'", val)
+	}
+
+	// common_value from common.yaml SHOULD be present with recursive=true
+	if val, ok := merged["common_value"]; !ok {
+		t.Error("'common_value' from common.yaml SHOULD be present when target.yaml is merged with recursive=true")
+	} else if val != "from-common-file" {
+		t.Errorf("Expected common_value='from-common-file', got '%v'", val)
+	}
+
+	// Both target_only and including_only should be present
+	if _, ok := merged["target_only"]; !ok {
+		t.Error("'target_only' should be defined")
+	}
+	if _, ok := merged["including_only"]; !ok {
+		t.Error("'including_only' should be defined")
+	}
+}
+
+func TestMergeCommonFileWalksUpParents(t *testing.T) {
+	initLoggers()
+	rootFlag = abs("fixtures")
+	initConf(rootFlag)
+	initSchemaList()
+	initMergeStrategies()
+
+	// Test that when explicitly merging a common.yaml file (even though it's not a catalog item),
+	// it should still walk up the directory tree and merge parent common files
+	// This is a regression test for the bug where getMergeList was returning early for non-catalog items
+	merged, includeList, err := mergeVars(
+		"fixtures/test/COMMON_MERGE_TEST/subdir/common.yaml",
+		mergeStrategies,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// The merge list should contain both parent and child common.yaml files
+	foundParent := false
+	foundChild := false
+	for _, inc := range includeList {
+		if strings.HasSuffix(inc.path, "COMMON_MERGE_TEST/common.yaml") {
+			foundParent = true
+		}
+		if strings.HasSuffix(inc.path, "COMMON_MERGE_TEST/subdir/common.yaml") {
+			foundChild = true
+		}
+	}
+	if !foundParent {
+		t.Error("Parent common.yaml should be in merge list when explicitly merging a child common.yaml")
+	}
+	if !foundChild {
+		t.Error("Child common.yaml should be in merge list")
+	}
+
+	// Check merged values
+	// parent_value should be present (from parent common.yaml)
+	if val, ok := merged["parent_value"]; !ok {
+		t.Error("'parent_value' from parent common.yaml should be present")
+	} else if val != "from-parent-common" {
+		t.Errorf("Expected parent_value='from-parent-common', got '%v'", val)
+	}
+
+	// child_value should be present (from child common.yaml)
+	if val, ok := merged["child_value"]; !ok {
+		t.Error("'child_value' from child common.yaml should be present")
+	} else if val != "from-child-common" {
+		t.Errorf("Expected child_value='from-child-common', got '%v'", val)
+	}
+
+	// shared_value should be from child (child overrides parent)
+	if val, ok := merged["shared_value"]; !ok {
+		t.Error("'shared_value' should be present")
+	} else if val != "from-child" {
+		t.Errorf("Expected shared_value='from-child' (child should override parent), got '%v'", val)
 	}
 }
 

@@ -1,0 +1,7 @@
+---
+# Target catalog item
+# When this is included/merged:
+#   - with recursive=false: its parent common.yaml should NOT be included
+#   - with recursive=true: its parent common.yaml SHOULD be included
+foo: from-target
+target_only: true

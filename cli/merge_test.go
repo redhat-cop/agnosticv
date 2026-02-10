@@ -312,9 +312,10 @@ func TestMerge(t *testing.T) {
 		t.Error("/__meta__/from_include2_meta  be merged from include")
 	}
 
+	// include1.meta.yaml SHOULD be auto-included since include1.yaml is #include'd with recursive=true (default)
 	found, value, _, err = Get(merged, "/__meta__/from_include1_meta")
 	if !found || err != nil || value != "value1" {
-		t.Error("/__meta__/from_include1_meta  be merged from detected meta")
+		t.Error("/__meta__/from_include1_meta should be present with value 'value1' (include1.meta.yaml auto-included with recursive=true)")
 	}
 
 	_, includeList, err = mergeVars(
