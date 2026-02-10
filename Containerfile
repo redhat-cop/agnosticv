@@ -1,5 +1,5 @@
 FROM registry.access.redhat.com/ubi8/ubi:latest AS deploy
-ENV agv_version=v0.8.1
+ENV agv_version=v1.0.0
 RUN dnf install -y \
     bash \
     bind-utils \
